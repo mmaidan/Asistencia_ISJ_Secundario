@@ -181,7 +181,7 @@ function TomaDeAsistencia({ cursos, grados, genero, userId }) {
             {alumnos.map((a) => (
               <div key={a.id} className="flex items-center justify-between px-4 py-3">
                 <span className="text-tinta font-medium">
-                  {a.nombre} {a.apellido}
+                  {a.apellido}, {a.nombre}
                 </span>
                 <div className="flex gap-1.5">
                   <EstadoBtn active={estados[a.id] === "presente"} onClick={() => setEstado(a.id, "presente")} colorClass="text-verde" bgClass="bg-verde-claro" borderClass="border-verde" icon={CheckCircle2} label="Presente" />
