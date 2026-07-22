@@ -188,6 +188,7 @@ export function interpretarCSV(texto, cursos) {
       gradoRaw,
       grado,
       divisionRaw,
+      divisionDetectada,
       cursoId,
       valido: Boolean(apellido && nombre && sexo && grado),
     };
