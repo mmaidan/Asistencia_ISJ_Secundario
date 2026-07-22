@@ -107,8 +107,9 @@ orden, desde el SQL Editor:
    renueva `asistencias` para que las use.
 2. `migracion-genero-profesor.sql` — agrega a qué género le da clase
    cada profesor.
-3. `migracion-directivo-preceptor.sql` — agrega el rol Directivo y el
-   curso a cargo de cada preceptor.
+3. `migracion-directivo-preceptor.sql` — agrega el rol Directivo (el
+   año a cargo del preceptor usa la misma columna que ya tenían los
+   profesores, no hace falta una migración aparte para eso).
 
 Ninguna de estas toca los usuarios y contraseñas que ya tenías
 cargados.

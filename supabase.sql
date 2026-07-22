@@ -89,11 +89,6 @@ create policy "acceso app: borrar cursos"
   on public.cursos for delete
   using (true);
 
--- Ahora que ya existe "cursos", agregamos la referencia del preceptor a
--- su curso a cargo (solo uno; no depende del género).
-alter table public.usuarios
-  add column if not exists curso_id uuid references public.cursos(id);
-
 -- ------------------------------------------------------------
 -- 3) Tabla de alumnos
 -- ------------------------------------------------------------
