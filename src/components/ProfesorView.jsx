@@ -6,7 +6,7 @@ import { listarAlumnosPorCurso } from "../lib/alumnosApi";
 import { fetchAsistenciaCurso, guardarAsistencia } from "../lib/asistenciasApi";
 import { StatChip, EstadoBtn } from "./AttendanceUI";
 
-export default function ProfesorView({ grados, userId }) {
+export default function ProfesorView({ grados, genero, userId }) {
   const [cursos, setCursos] = useState(null);
   const [errorCarga, setErrorCarga] = useState("");
 
@@ -24,13 +24,16 @@ export default function ProfesorView({ grados, userId }) {
     return <div className="text-center py-12 text-texto2">Cargando cursos...</div>;
   }
 
-  return <TomaDeAsistencia cursos={cursos} grados={grados} userId={userId} />;
+  return <TomaDeAsistencia cursos={cursos} grados={grados} genero={genero} userId={userId} />;
 }
 
-function TomaDeAsistencia({ cursos, grados, userId }) {
+function TomaDeAsistencia({ cursos, grados, genero, userId }) {
   const cursosDisponibles = useMemo(
-    () => cursos.filter((c) => !grados || grados.includes(c.grado)),
-    [cursos, grados]
+    () =>
+      cursos.filter(
+        (c) => (!grados || grados.includes(c.grado)) && (!genero || c.genero === genero)
+      ),
+    [cursos, grados, genero]
   );
   const cursosPorGrado = useMemo(() => {
     const map = {};

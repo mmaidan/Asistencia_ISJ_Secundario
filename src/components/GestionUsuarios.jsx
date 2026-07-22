@@ -5,6 +5,7 @@ import {
   listarUsuarios,
   crearUsuario,
   actualizarGrados,
+  actualizarGenero,
   resetearClave,
   eliminarUsuario,
 } from "../lib/usuariosApi";
@@ -59,12 +60,36 @@ export default function GestionUsuarios({ miId }) {
   );
 }
 
+function SelectorGenero({ valor, onChange }) {
+  const opciones = [
+    { valor: "Varones", label: "Varones" },
+    { valor: "Mujeres", label: "Mujeres" },
+  ];
+  return (
+    <div className="flex gap-2">
+      {opciones.map((o) => (
+        <button
+          type="button"
+          key={o.valor}
+          onClick={() => onChange(o.valor)}
+          className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
+            valor === o.valor ? "bg-azul text-white border-azul" : "bg-transparent text-texto2 border-borde"
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function NuevoUsuario({ onCreado, setError }) {
   const [nombre, setNombre] = useState("");
   const [usuario, setUsuario] = useState("");
   const [clave, setClave] = useState("");
   const [rol, setRol] = useState("profesor");
   const [grados, setGrados] = useState([]);
+  const [genero, setGenero] = useState("");
   const [guardando, setGuardando] = useState(false);
 
   function toggleGrado(g) {
@@ -78,13 +103,18 @@ function NuevoUsuario({ onCreado, setError }) {
       setError("Completá nombre, usuario y contraseña.");
       return;
     }
+    if (rol === "profesor" && !genero) {
+      setError("Elegí si el profesor da clase a Varones o a Mujeres.");
+      return;
+    }
     setGuardando(true);
     try {
-      await crearUsuario({ usuario, clave, nombre, rol, grados });
+      await crearUsuario({ usuario, clave, nombre, rol, grados, genero });
       setNombre("");
       setUsuario("");
       setClave("");
       setGrados([]);
+      setGenero("");
       onCreado();
     } catch (e) {
       setError(
@@ -143,23 +173,32 @@ function NuevoUsuario({ onCreado, setError }) {
       </div>
 
       {rol === "profesor" && (
-        <div className="mb-4">
-          <label className="block text-xs font-medium text-texto2 mb-2">Cursos a cargo (por año)</label>
-          <div className="flex flex-wrap gap-2">
-            {GRADOS.map((g) => (
-              <button
-                type="button"
-                key={g}
-                onClick={() => toggleGrado(g)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
-                  grados.includes(g) ? "bg-azul text-white border-azul" : "bg-transparent text-texto2 border-borde"
-                }`}
-              >
-                {g}°
-              </button>
-            ))}
+        <>
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-texto2 mb-2">
+              ¿A quién le da clase? (nunca tienen clase juntos)
+            </label>
+            <SelectorGenero valor={genero} onChange={setGenero} />
           </div>
-        </div>
+
+          <div className="mb-4">
+            <label className="block text-xs font-medium text-texto2 mb-2">Cursos a cargo (por año)</label>
+            <div className="flex flex-wrap gap-2">
+              {GRADOS.map((g) => (
+                <button
+                  type="button"
+                  key={g}
+                  onClick={() => toggleGrado(g)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
+                    grados.includes(g) ? "bg-azul text-white border-azul" : "bg-transparent text-texto2 border-borde"
+                  }`}
+                >
+                  {g}°
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
       )}
 
       <button
@@ -175,6 +214,7 @@ function NuevoUsuario({ onCreado, setError }) {
 
 function FilaUsuario({ usuario, esUno, onCambio, setError }) {
   const [grados, setGrados] = useState(usuario.grados || []);
+  const [genero, setGenero] = useState(usuario.genero || "");
   const [editandoClave, setEditandoClave] = useState(false);
   const [nuevaClave, setNuevaClave] = useState("");
   const [ocupado, setOcupado] = useState(false);
@@ -190,6 +230,18 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
       onCambio();
     } catch (e) {
       setError("No se pudieron actualizar los cursos.");
+    }
+    setOcupado(false);
+  }
+
+  async function cambiarGenero(nuevo) {
+    setGenero(nuevo);
+    setOcupado(true);
+    try {
+      await actualizarGenero(usuario.id, nuevo);
+      onCambio();
+    } catch (e) {
+      setError("No se pudo actualizar a quién le da clase.");
     }
     setOcupado(false);
   }
@@ -228,6 +280,7 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
           </div>
           <div className="text-xs text-texto2">
             @{usuario.usuario} · {ROL_LABEL[usuario.rol]}
+            {usuario.rol === "profesor" && usuario.genero && ` · ${usuario.genero}`}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -268,31 +321,38 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
       )}
 
       {usuario.rol === "profesor" && (
-        <div className="mt-2">
-          <div className="text-xs text-texto2 mb-1.5">Cursos a cargo</div>
-          <div className="flex flex-wrap gap-2 items-center">
-            {GRADOS.map((g) => (
-              <button
-                key={g}
-                onClick={() => toggleGrado(g)}
-                className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                  grados.includes(g) ? "bg-azul text-white border-azul" : "bg-transparent text-texto2 border-borde"
-                }`}
-              >
-                {g}°
-              </button>
-            ))}
-            {JSON.stringify(grados) !== JSON.stringify(usuario.grados || []) && (
-              <button
-                onClick={guardarGrados}
-                disabled={ocupado}
-                className="text-xs font-medium text-white bg-verde px-3 py-1 rounded-full border-none cursor-pointer"
-              >
-                Guardar cambios
-              </button>
-            )}
+        <>
+          <div className="mt-2 mb-3">
+            <div className="text-xs text-texto2 mb-1.5">¿A quién le da clase?</div>
+            <SelectorGenero valor={genero} onChange={cambiarGenero} />
           </div>
-        </div>
+
+          <div className="mt-2">
+            <div className="text-xs text-texto2 mb-1.5">Cursos a cargo</div>
+            <div className="flex flex-wrap gap-2 items-center">
+              {GRADOS.map((g) => (
+                <button
+                  key={g}
+                  onClick={() => toggleGrado(g)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                    grados.includes(g) ? "bg-azul text-white border-azul" : "bg-transparent text-texto2 border-borde"
+                  }`}
+                >
+                  {g}°
+                </button>
+              ))}
+              {JSON.stringify(grados) !== JSON.stringify(usuario.grados || []) && (
+                <button
+                  onClick={guardarGrados}
+                  disabled={ocupado}
+                  className="text-xs font-medium text-white bg-verde px-3 py-1 rounded-full border-none cursor-pointer"
+                >
+                  Guardar cambios
+                </button>
+              )}
+            </div>
+          </div>
+        </>
       )}
     </div>
   );
