@@ -110,6 +110,9 @@ orden, desde el SQL Editor:
 3. `migracion-directivo-preceptor.sql` — agrega el rol Directivo (el
    año a cargo del preceptor usa la misma columna que ya tenían los
    profesores, no hace falta una migración aparte para eso).
+4. `migracion-config-justificativos.sql` — agrega la tabla de
+   configuración (umbral de alertas) y la de justificativos de
+   ausencias.
 
 Ninguna de estas toca los usuarios y contraseñas que ya tenías
 cargados.
@@ -190,6 +193,16 @@ Para tener en cuenta
   matriculación no distingue A/B (por ejemplo, secciones marcadas como
   "única"), la app lo deja para elegir a mano en la vista previa antes
   de confirmar.
+- Ya están implementados: exportar reportes a PDF (además de CSV),
+  editar una asistencia ya guardada (el rector/directivo puede tocar
+  "Ver / editar" en cualquier curso de "Estado del día"), justificativos
+  de ausencias (ícono de justificar cuando un alumno está marcado
+  ausente), aviso cuando una clase de hoy ya pasó su horario y sigue
+  sin asistencia cargada, umbral de alertas configurable (pestaña
+  Alertas), edición y búsqueda de alumnos y usuarios.
+- El preceptor ve su año agrupado por división (A / B), no por
+  género — cada división junta a Varones y Mujeres en una sola lista,
+  aunque el profesor los siga cargando por separado.
 
 Ideas para más adelante
 ----------------------------
@@ -197,11 +210,11 @@ Ideas para más adelante
 Quedaron anotadas para una próxima vuelta (no están implementadas
 todavía):
 
-- Justificativos de ausencias (con motivo, ej. certificado médico)
 - Que cada profesor pueda cambiar su propia contraseña
-- Editar una asistencia ya guardada, con registro de quién la corrigió
-- Aviso automático al preceptor si pasado el horario de clase la
-  asistencia todavía no se cargó
-- Exportar reportes a PDF o Excel
+- Cursos con una sola división ("sección única"), sin obligar A/B —
+  requiere repensar la estructura fija de 24 cursos, así que conviene
+  hacerlo con cuidado, no de apuro
 - Convertir la app en PWA (instalable en el celular con ícono propio)
+- Modo oscuro
 - Generalizar el esquema a otras materias, no solo Educación Física
+- Registro de quién editó una asistencia y cuándo (auditoría)
