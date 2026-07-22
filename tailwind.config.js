@@ -1,25 +1,30 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: "class",
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        azul: "#5B7C9D",
-        "azul-claro": "#E4EBF3",
-        bordo: "#7A2333",
-        "bordo-hover": "#6A1E2B",
-        rojo: "#B85C56",
-        "rojo-claro": "#F5DEDC",
-        dorado: "#B98A3E",
-        "dorado-claro": "#F6EAD3",
-        verde: "#5F8F55",
-        "verde-claro": "#E6EFE1",
-        tinta: "#2B2B28",
-        texto2: "#6B6860",
-        texto3: "#B0ADA4",
-        borde: "#E6E2D8",
-        borde2: "#F0ECE1",
-        tiza: "#FAF8F4",
+        // Todos los colores están atados a variables CSS (definidas en
+        // src/index.css) para que el modo día/noche funcione sin tener
+        // que tocar las clases de cada componente.
+        azul: "var(--color-azul)",
+        "azul-claro": "var(--color-azul-claro)",
+        bordo: "var(--color-bordo)",
+        "bordo-hover": "var(--color-bordo-hover)",
+        rojo: "var(--color-rojo)",
+        "rojo-claro": "var(--color-rojo-claro)",
+        dorado: "var(--color-dorado)",
+        "dorado-claro": "var(--color-dorado-claro)",
+        verde: "var(--color-verde)",
+        "verde-claro": "var(--color-verde-claro)",
+        tinta: "var(--color-tinta)",
+        texto2: "var(--color-texto2)",
+        texto3: "var(--color-texto3)",
+        borde: "var(--color-borde)",
+        borde2: "var(--color-borde2)",
+        tiza: "var(--color-tiza)",
+        white: "var(--color-card)",
       },
       fontFamily: {
         display: ['"Bebas Neue"', "sans-serif"],
