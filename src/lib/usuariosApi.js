@@ -49,6 +49,11 @@ export async function actualizarGradoPreceptor(id, grado) {
   if (error) throw error;
 }
 
+export async function actualizarNombre(id, nombre) {
+  const { error } = await supabase.from("usuarios").update({ nombre: nombre.trim() }).eq("id", id);
+  if (error) throw error;
+}
+
 export async function resetearClave(id, nuevaClave) {
   const clave_hash = await hashClave(nuevaClave);
   const { error } = await supabase.from("usuarios").update({ clave_hash }).eq("id", id);

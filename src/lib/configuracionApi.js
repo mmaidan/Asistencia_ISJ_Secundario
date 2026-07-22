@@ -12,6 +12,6 @@ export async function obtenerUmbralAusencias() {
 export async function actualizarUmbralAusencias(valor) {
   const { error } = await supabase
     .from("configuracion")
-    .upsert({ clave: "umbral_ausencias", valor: String(valor) });
+    .upsert({ clave: "umbral_ausencias", valor: String(valor) }, { onConflict: "clave" });
   if (error) throw error;
 }
