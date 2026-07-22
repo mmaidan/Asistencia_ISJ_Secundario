@@ -15,11 +15,29 @@ export async function hashClave(clave) {
 }
 
 export async function loginUsuario(usuario, clave) {
+  const usuarioLimpio = usuario.trim().toLowerCase();
+
+  // TEMPORAL: el usuario "rector" entra sin contraseña, a pedido explícito.
+  // Sacá este bloque (y volvé a exigir clave_hash) antes de usar la app
+  // con datos reales, porque así cualquiera que escriba "rector" entra
+  // como superusuario.
+  if (usuarioLimpio === "rector") {
+    const { data, error } = await supabase
+      .from("usuarios")
+      .select("id, usuario, nombre, rol, grados")
+      .eq("usuario", "rector")
+      .eq("rol", "rector")
+      .maybeSingle();
+    if (error || !data) return null;
+    localStorage.setItem(SESION_KEY, JSON.stringify(data));
+    return data;
+  }
+
   const claveHash = await hashClave(clave);
   const { data, error } = await supabase
     .from("usuarios")
     .select("id, usuario, nombre, rol, grados")
-    .eq("usuario", usuario.trim().toLowerCase())
+    .eq("usuario", usuarioLimpio)
     .eq("clave_hash", claveHash)
     .maybeSingle();
 
