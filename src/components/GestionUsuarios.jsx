@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { UserPlus, KeyRound, Trash2, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { UserPlus, KeyRound, Trash2, Users, Search, X } from "lucide-react";
 import { GRADOS } from "../lib/data";
 import {
   listarUsuarios,
@@ -22,6 +22,7 @@ export default function GestionUsuarios({ miId }) {
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
+  const [busqueda, setBusqueda] = useState("");
 
   async function recargar() {
     setCargando(true);
@@ -37,21 +38,52 @@ export default function GestionUsuarios({ miId }) {
     recargar();
   }, []);
 
+  const usuariosFiltrados = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
+    if (!termino) return usuarios;
+    return usuarios.filter(
+      (u) => u.nombre.toLowerCase().includes(termino) || u.usuario.toLowerCase().includes(termino)
+    );
+  }, [usuarios, busqueda]);
+
   return (
     <div>
       <NuevoUsuario onCreado={recargar} setError={setError} />
 
       {error && <div className="text-rojo text-sm mb-4">{error}</div>}
 
-      <div className="flex items-center gap-2 mb-3 text-tinta font-semibold">
-        <Users size={18} /> Usuarios existentes
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <div className="flex items-center gap-2 text-tinta font-semibold">
+          <Users size={18} /> Usuarios existentes
+        </div>
+        <div className="relative w-full sm:w-64">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto3" />
+          <input
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar usuario..."
+            className="w-full box-border border border-borde rounded-lg pl-9 pr-8 py-2 text-sm text-tinta"
+          />
+          {busqueda && (
+            <button
+              onClick={() => setBusqueda("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-texto3 bg-transparent border-none cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
       {cargando ? (
         <div className="text-center py-8 text-texto2">Cargando usuarios...</div>
+      ) : usuariosFiltrados.length === 0 ? (
+        <div className="text-center py-8 text-texto3 text-sm">
+          No se encontraron usuarios para "{busqueda}".
+        </div>
       ) : (
         <div className="grid gap-3">
-          {usuarios.map((u) => (
+          {usuariosFiltrados.map((u) => (
             <FilaUsuario
               key={u.id}
               usuario={u}

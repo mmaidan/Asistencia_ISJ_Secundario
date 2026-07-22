@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Upload, Trash2, Users2, ChevronDown, ChevronRight } from "lucide-react";
+import { Upload, Trash2, Pencil, Users2, ChevronDown, ChevronRight, Search, X } from "lucide-react";
 import { listarCursos } from "../lib/cursosApi";
 import {
   listarTodosLosAlumnos,
   importarAlumnos,
   eliminarAlumno,
+  actualizarAlumno,
   interpretarCSV,
 } from "../lib/alumnosApi";
 
@@ -13,6 +14,8 @@ export default function GestionAlumnos() {
   const [alumnos, setAlumnos] = useState([]);
   const [error, setError] = useState("");
   const [cursoAbierto, setCursoAbierto] = useState(null);
+  const [busqueda, setBusqueda] = useState("");
+  const [editando, setEditando] = useState(null); // id del alumno en edición
 
   useEffect(() => {
     recargar();
@@ -36,6 +39,17 @@ export default function GestionAlumnos() {
     return map;
   }, [alumnos]);
 
+  const resultadosBusqueda = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
+    if (!termino) return null;
+    return alumnos
+      .filter(
+        (a) =>
+          a.apellido.toLowerCase().includes(termino) || a.nombre.toLowerCase().includes(termino)
+      )
+      .sort((a, b) => a.apellido.localeCompare(b.apellido));
+  }, [alumnos, busqueda]);
+
   async function borrarAlumno(id) {
     if (!confirm("¿Borrar este alumno de la lista?")) return;
     try {
@@ -53,52 +67,224 @@ export default function GestionAlumnos() {
     <div>
       <ImportarCSV cursos={cursos} onImportado={recargar} />
 
-      <div className="flex items-center gap-2 mb-3 text-tinta font-semibold">
-        <Users2 size={18} /> Alumnos por curso
+      <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
+        <div className="flex items-center gap-2 text-tinta font-semibold">
+          <Users2 size={18} /> Alumnos {resultadosBusqueda === null ? "por curso" : ""}
+        </div>
+        <div className="relative w-full sm:w-64">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto3" />
+          <input
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar alumno por nombre..."
+            className="w-full box-border border border-borde rounded-lg pl-9 pr-8 py-2 text-sm text-tinta"
+          />
+          {busqueda && (
+            <button
+              onClick={() => setBusqueda("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-texto3 bg-transparent border-none cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="grid gap-2">
-        {cursos.map((c) => {
-          const lista = alumnosPorCurso[c.id] || [];
-          const abierto = cursoAbierto === c.id;
-          return (
-            <div key={c.id} className="bg-white border border-borde rounded-xl overflow-hidden">
-              <button
-                onClick={() => setCursoAbierto(abierto ? null : c.id)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-transparent border-none cursor-pointer text-left"
-              >
-                <span className="font-medium text-tinta">{c.nombre}</span>
-                <span className="flex items-center gap-2 text-sm text-texto2">
-                  {lista.length} alumnos
-                  {abierto ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                </span>
-              </button>
-              {abierto && (
-                <div className="border-t border-borde2 divide-y divide-borde2">
-                  {lista.length === 0 ? (
-                    <div className="px-4 py-3 text-sm text-texto3">Sin alumnos cargados.</div>
-                  ) : (
-                    lista
-                      .sort((a, b) => a.apellido.localeCompare(b.apellido))
-                      .map((a) => (
-                        <div key={a.id} className="flex items-center justify-between px-4 py-2.5">
-                          <span className="text-sm text-tinta">
-                            {a.apellido}, {a.nombre}
-                          </span>
-                          <button
-                            onClick={() => borrarAlumno(a.id)}
-                            className="text-texto3 hover:text-rojo bg-transparent border-none cursor-pointer"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      ))
-                  )}
-                </div>
+      {resultadosBusqueda !== null ? (
+        <div className="bg-white border border-borde rounded-xl overflow-hidden">
+          {resultadosBusqueda.length === 0 ? (
+            <div className="px-4 py-6 text-sm text-texto3 text-center">
+              No se encontraron alumnos para "{busqueda}".
+            </div>
+          ) : (
+            <div className="divide-y divide-borde2">
+              {resultadosBusqueda.map((a) =>
+                editando === a.id ? (
+                  <EditorAlumno
+                    key={a.id}
+                    alumno={a}
+                    cursos={cursos}
+                    onCancelar={() => setEditando(null)}
+                    onGuardado={() => {
+                      setEditando(null);
+                      recargar();
+                    }}
+                    setError={setError}
+                  />
+                ) : (
+                  <FilaAlumno
+                    key={a.id}
+                    alumno={a}
+                    cursoNombre={cursos.find((c) => c.id === a.curso_id)?.nombre}
+                    onEditar={() => setEditando(a.id)}
+                    onBorrar={() => borrarAlumno(a.id)}
+                  />
+                )
               )}
             </div>
-          );
-        })}
+          )}
+        </div>
+      ) : (
+        <div className="grid gap-2">
+          {cursos.map((c) => {
+            const lista = (alumnosPorCurso[c.id] || []).sort((a, b) => a.apellido.localeCompare(b.apellido));
+            const abierto = cursoAbierto === c.id;
+            return (
+              <div key={c.id} className="bg-white border border-borde rounded-xl overflow-hidden">
+                <button
+                  onClick={() => setCursoAbierto(abierto ? null : c.id)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-transparent border-none cursor-pointer text-left"
+                >
+                  <span className="font-medium text-tinta">{c.nombre}</span>
+                  <span className="flex items-center gap-2 text-sm text-texto2">
+                    {lista.length} alumnos
+                    {abierto ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+                  </span>
+                </button>
+                {abierto && (
+                  <div className="border-t border-borde2 divide-y divide-borde2">
+                    {lista.length === 0 ? (
+                      <div className="px-4 py-3 text-sm text-texto3">Sin alumnos cargados.</div>
+                    ) : (
+                      lista.map((a) =>
+                        editando === a.id ? (
+                          <EditorAlumno
+                            key={a.id}
+                            alumno={a}
+                            cursos={cursos}
+                            onCancelar={() => setEditando(null)}
+                            onGuardado={() => {
+                              setEditando(null);
+                              recargar();
+                            }}
+                            setError={setError}
+                          />
+                        ) : (
+                          <FilaAlumno
+                            key={a.id}
+                            alumno={a}
+                            onEditar={() => setEditando(a.id)}
+                            onBorrar={() => borrarAlumno(a.id)}
+                          />
+                        )
+                      )
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FilaAlumno({ alumno, cursoNombre, onEditar, onBorrar }) {
+  return (
+    <div className="flex items-center justify-between px-4 py-2.5 gap-2">
+      <div className="min-w-0">
+        <span className="text-sm text-tinta">
+          {alumno.apellido}, {alumno.nombre}
+        </span>
+        {cursoNombre && <span className="text-xs text-texto3 block">{cursoNombre}</span>}
+      </div>
+      <div className="flex gap-1 shrink-0">
+        <button
+          onClick={onEditar}
+          className="text-texto3 hover:text-azul bg-transparent border-none cursor-pointer p-1"
+        >
+          <Pencil size={14} />
+        </button>
+        <button
+          onClick={onBorrar}
+          className="text-texto3 hover:text-rojo bg-transparent border-none cursor-pointer p-1"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EditorAlumno({ alumno, cursos, onCancelar, onGuardado, setError }) {
+  const [apellido, setApellido] = useState(alumno.apellido);
+  const [nombre, setNombre] = useState(alumno.nombre);
+  const [sexo, setSexo] = useState(alumno.sexo);
+  const [cursoId, setCursoId] = useState(alumno.curso_id);
+  const [guardando, setGuardando] = useState(false);
+
+  const porGrado = {};
+  cursos.forEach((c) => {
+    if (!porGrado[c.grado]) porGrado[c.grado] = [];
+    porGrado[c.grado].push(c);
+  });
+
+  async function guardar() {
+    if (!apellido.trim() || !nombre.trim()) return;
+    setGuardando(true);
+    try {
+      await actualizarAlumno(alumno.id, { apellido: apellido.trim(), nombre: nombre.trim(), sexo, cursoId });
+      onGuardado();
+    } catch (e) {
+      setError("No se pudo guardar el alumno.");
+    }
+    setGuardando(false);
+  }
+
+  return (
+    <div className="px-4 py-3 bg-tiza">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+        <input
+          value={apellido}
+          onChange={(e) => setApellido(e.target.value)}
+          placeholder="Apellido"
+          className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta"
+        />
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          placeholder="Nombre"
+          className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta"
+        />
+        <select
+          value={sexo}
+          onChange={(e) => setSexo(e.target.value)}
+          className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta"
+        >
+          <option value="Varones">Varones</option>
+          <option value="Mujeres">Mujeres</option>
+        </select>
+        <select
+          value={cursoId}
+          onChange={(e) => setCursoId(e.target.value)}
+          className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta"
+        >
+          {Object.entries(porGrado).map(([grado, lista]) => (
+            <optgroup key={grado} label={`${grado}°`}>
+              {lista.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.division} — {c.genero}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+      <div className="flex gap-2">
+        <button
+          onClick={guardar}
+          disabled={guardando}
+          className="text-xs font-medium text-white bg-verde px-3 py-1.5 rounded-full border-none cursor-pointer"
+        >
+          {guardando ? "Guardando..." : "Guardar"}
+        </button>
+        <button
+          onClick={onCancelar}
+          className="text-xs font-medium text-texto2 bg-transparent border border-borde px-3 py-1.5 rounded-full cursor-pointer"
+        >
+          Cancelar
+        </button>
       </div>
     </div>
   );

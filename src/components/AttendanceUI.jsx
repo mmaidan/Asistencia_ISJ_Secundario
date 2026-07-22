@@ -34,13 +34,18 @@ export function TabBtn({ active, onClick, icon: Icon, children }) {
   );
 }
 
-export function CursoEstadoCard({ curso, reg, total }) {
+export function CursoEstadoCard({ curso, reg, total, atrasado, onClick, abierto }) {
   const estados = reg?.estados || null;
   const ausentes = estados ? Object.values(estados).filter((e) => e === "ausente").length : 0;
   const tarde = estados ? Object.values(estados).filter((e) => e === "tarde").length : 0;
 
   return (
-    <div className="bg-white border border-borde rounded-2xl px-5 py-4">
+    <div
+      className={`bg-white border rounded-2xl px-4 sm:px-5 py-4 ${
+        atrasado && !reg ? "border-rojo-claro" : "border-borde"
+      } ${onClick ? "cursor-pointer" : ""}`}
+      onClick={onClick}
+    >
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <div className="font-semibold text-tinta">{curso.nombre}</div>
@@ -50,10 +55,19 @@ export function CursoEstadoCard({ curso, reg, total }) {
           <div className="flex items-center gap-1.5 text-sm font-medium text-verde bg-verde-claro px-3 py-1 rounded-full">
             Tomada a las {reg.horaGuardado}
           </div>
+        ) : atrasado ? (
+          <div className="flex items-center gap-1.5 text-sm font-medium text-rojo bg-rojo-claro px-3 py-1 rounded-full">
+            Atrasada
+          </div>
         ) : (
           <div className="flex items-center gap-1.5 text-sm font-medium text-dorado bg-dorado-claro px-3 py-1 rounded-full">
             Sin registrar
           </div>
+        )}
+        {onClick && (
+          <span className="text-xs text-azul font-medium ml-auto sm:ml-0">
+            {abierto ? "Cerrar" : "Ver / editar"}
+          </span>
         )}
       </div>
       {reg && (

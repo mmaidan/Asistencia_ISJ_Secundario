@@ -12,21 +12,31 @@ const ESTADO_META = {
 };
 
 export default function PreceptorView({ grado }) {
-  const [cursos, setCursos] = useState(null);
+  const [divisiones, setDivisiones] = useState(null);
   const [fecha, setFecha] = useState(todayISO());
   const [error, setError] = useState("");
-  const [cursoAbierto, setCursoAbierto] = useState(null);
+  const [divisionAbierta, setDivisionAbierta] = useState(null);
 
   useEffect(() => {
     if (!grado) {
-      setCursos([]);
+      setDivisiones([]);
       return;
     }
     listarCursos()
       .then((todos) => {
         const delAnio = todos.filter((c) => c.grado === grado);
-        setCursos(delAnio);
-        setCursoAbierto(delAnio[0]?.id || null);
+        // Agrupamos por división: cada división tiene un curso de Varones
+        // y uno de Mujeres, pero el preceptor los ve juntos, sin distinguir.
+        const porDivision = {};
+        delAnio.forEach((c) => {
+          if (!porDivision[c.division]) porDivision[c.division] = [];
+          porDivision[c.division].push(c);
+        });
+        const lista = Object.entries(porDivision)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([division, cursos]) => ({ division, cursos }));
+        setDivisiones(lista);
+        setDivisionAbierta(lista[0]?.division || null);
       })
       .catch(() => setError("No se pudieron cargar los cursos."));
   }, [grado]);
@@ -41,7 +51,7 @@ export default function PreceptorView({ grado }) {
   }
 
   if (error) return <div className="text-rojo text-sm">{error}</div>;
-  if (!cursos) return <div className="text-center py-12 text-texto2">Cargando...</div>;
+  if (!divisiones) return <div className="text-center py-12 text-texto2">Cargando...</div>;
 
   return (
     <div>
@@ -58,13 +68,14 @@ export default function PreceptorView({ grado }) {
       <div className="text-sm text-texto2 mb-5 capitalize">{formatFecha(fecha)}</div>
 
       <div className="grid gap-3">
-        {cursos.map((c) => (
-          <CursoPlegable
-            key={c.id}
-            curso={c}
+        {divisiones.map(({ division, cursos }) => (
+          <DivisionPlegable
+            key={division}
+            division={division}
+            cursos={cursos}
             fecha={fecha}
-            abierto={cursoAbierto === c.id}
-            onToggle={() => setCursoAbierto(cursoAbierto === c.id ? null : c.id)}
+            abierto={divisionAbierta === division}
+            onToggle={() => setDivisionAbierta(divisionAbierta === division ? null : division)}
           />
         ))}
       </div>
@@ -72,34 +83,54 @@ export default function PreceptorView({ grado }) {
   );
 }
 
-function CursoPlegable({ curso, fecha, abierto, onToggle }) {
+function DivisionPlegable({ division, cursos, fecha, abierto, onToggle }) {
   const [alumnos, setAlumnos] = useState(null);
-  const [reg, setReg] = useState(null);
+  const [regs, setRegs] = useState({});
   const [cargando, setCargando] = useState(false);
 
   useEffect(() => {
     if (!abierto || alumnos !== null) return;
     setCargando(true);
-    listarAlumnosPorCurso(curso.id).then((a) => {
-      setAlumnos(a);
+    Promise.all(cursos.map((c) => listarAlumnosPorCurso(c.id))).then((listas) => {
+      setAlumnos(listas.flat());
       setCargando(false);
     });
-  }, [abierto, curso.id]); // eslint-disable-line
+  }, [abierto, cursos]); // eslint-disable-line
 
   useEffect(() => {
     if (!abierto) return;
-    fetchAsistenciaCurso(curso.id, fecha).then(setReg);
-  }, [abierto, curso.id, fecha]);
+    Promise.all(cursos.map((c) => fetchAsistenciaCurso(c.id, fecha))).then((resultados) => {
+      const map = {};
+      cursos.forEach((c, i) => (map[c.id] = resultados[i]));
+      setRegs(map);
+    });
+  }, [abierto, cursos, fecha]); // eslint-disable-line
+
+  const estadosCombinados = useMemo(() => {
+    const combinado = {};
+    Object.values(regs).forEach((r) => {
+      if (r) Object.assign(combinado, r.estados);
+    });
+    return combinado;
+  }, [regs]);
 
   const resumen = useMemo(() => {
-    if (!reg) return null;
-    const valores = Object.values(reg.estados);
+    const valores = Object.values(estadosCombinados);
     return {
       presentes: valores.filter((e) => e === "presente").length,
       ausentes: valores.filter((e) => e === "ausente").length,
       tarde: valores.filter((e) => e === "tarde").length,
     };
-  }, [reg]);
+  }, [estadosCombinados]);
+
+  const tomadas = cursos.filter((c) => regs[c.id]).length;
+  const todasTomadas = tomadas === cursos.length;
+  const ningunaTomada = tomadas === 0;
+
+  const alumnosOrdenados = useMemo(
+    () => (alumnos ? [...alumnos].sort((a, b) => a.apellido.localeCompare(b.apellido)) : []),
+    [alumnos]
+  );
 
   return (
     <div className="bg-white border border-borde rounded-2xl overflow-hidden">
@@ -107,15 +138,19 @@ function CursoPlegable({ curso, fecha, abierto, onToggle }) {
         onClick={onToggle}
         className="w-full flex items-center justify-between px-4 sm:px-5 py-3.5 bg-transparent border-none cursor-pointer text-left"
       >
-        <span className="font-medium text-tinta">{curso.nombre}</span>
+        <span className="font-medium text-tinta">División {division}</span>
         <span className="flex items-center gap-2 text-sm">
-          {reg ? (
+          {todasTomadas ? (
             <span className="text-verde bg-verde-claro px-2.5 py-1 rounded-full text-xs font-medium">
-              Tomada a las {reg.horaGuardado}
+              Tomada
+            </span>
+          ) : ningunaTomada ? (
+            <span className="text-dorado bg-dorado-claro px-2.5 py-1 rounded-full text-xs font-medium">
+              Sin registrar
             </span>
           ) : (
             <span className="text-dorado bg-dorado-claro px-2.5 py-1 rounded-full text-xs font-medium">
-              Sin registrar
+              Parcial ({tomadas}/{cursos.length})
             </span>
           )}
           {abierto ? <ChevronDown size={16} className="text-texto3" /> : <ChevronRight size={16} className="text-texto3" />}
@@ -124,7 +159,7 @@ function CursoPlegable({ curso, fecha, abierto, onToggle }) {
 
       {abierto && (
         <div className="border-t border-borde2">
-          {resumen && (
+          {(resumen.presentes > 0 || resumen.ausentes > 0 || resumen.tarde > 0) && (
             <div className="flex gap-4 px-4 sm:px-5 py-3 text-sm font-mono border-b border-borde2">
               <span className="text-verde font-semibold">{resumen.presentes} presentes</span>
               {resumen.ausentes > 0 && <span className="text-rojo font-semibold">{resumen.ausentes} ausentes</span>}
@@ -133,12 +168,12 @@ function CursoPlegable({ curso, fecha, abierto, onToggle }) {
           )}
           {cargando || !alumnos ? (
             <div className="text-center py-8 text-texto2 text-sm">Cargando alumnos...</div>
-          ) : alumnos.length === 0 ? (
+          ) : alumnosOrdenados.length === 0 ? (
             <div className="text-center py-6 text-texto3 text-sm">Sin alumnos cargados.</div>
           ) : (
             <div className="divide-y divide-borde2">
-              {alumnos.map((a) => {
-                const estado = reg?.estados?.[a.id];
+              {alumnosOrdenados.map((a) => {
+                const estado = estadosCombinados[a.id];
                 const meta = estado ? ESTADO_META[estado] : null;
                 const Icon = meta?.icon || HelpCircle;
                 return (
