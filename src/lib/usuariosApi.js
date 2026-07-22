@@ -4,22 +4,26 @@ import { hashClave } from "./auth";
 export async function listarUsuarios() {
   const { data, error } = await supabase
     .from("usuarios")
-    .select("id, usuario, nombre, rol, grados, genero, curso_id, created_at")
+    .select("id, usuario, nombre, rol, grados, genero, created_at")
     .order("created_at", { ascending: true });
   if (error) throw error;
   return data;
 }
 
-export async function crearUsuario({ usuario, clave, nombre, rol, grados, genero, cursoId }) {
+export async function crearUsuario({ usuario, clave, nombre, rol, grados, genero, gradoPreceptor }) {
   const clave_hash = await hashClave(clave);
   const { error } = await supabase.from("usuarios").insert({
     usuario: usuario.trim().toLowerCase(),
     clave_hash,
     nombre: nombre.trim(),
     rol,
-    grados: rol === "profesor" && grados?.length ? grados : null,
+    grados:
+      rol === "profesor" && grados?.length
+        ? grados
+        : rol === "preceptor" && gradoPreceptor
+        ? [gradoPreceptor]
+        : null,
     genero: rol === "profesor" ? genero || null : null,
-    curso_id: rol === "preceptor" ? cursoId || null : null,
   });
   if (error) throw error;
 }
@@ -37,8 +41,11 @@ export async function actualizarGenero(id, genero) {
   if (error) throw error;
 }
 
-export async function actualizarCursoPreceptor(id, cursoId) {
-  const { error } = await supabase.from("usuarios").update({ curso_id: cursoId }).eq("id", id);
+export async function actualizarGradoPreceptor(id, grado) {
+  const { error } = await supabase
+    .from("usuarios")
+    .update({ grados: grado ? [grado] : null })
+    .eq("id", id);
   if (error) throw error;
 }
 
