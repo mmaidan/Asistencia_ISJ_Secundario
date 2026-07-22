@@ -24,7 +24,7 @@ export async function loginUsuario(usuario, clave) {
   if (usuarioLimpio === "rector") {
     const { data, error } = await supabase
       .from("usuarios")
-      .select("id, usuario, nombre, rol, grados, genero")
+      .select("id, usuario, nombre, rol, grados, genero, curso_id")
       .eq("usuario", "rector")
       .eq("rol", "rector")
       .maybeSingle();
@@ -36,7 +36,7 @@ export async function loginUsuario(usuario, clave) {
   const claveHash = await hashClave(clave);
   const { data, error } = await supabase
     .from("usuarios")
-    .select("id, usuario, nombre, rol, grados, genero")
+    .select("id, usuario, nombre, rol, grados, genero, curso_id")
     .eq("usuario", usuarioLimpio)
     .eq("clave_hash", claveHash)
     .maybeSingle();
