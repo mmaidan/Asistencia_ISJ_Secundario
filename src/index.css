@@ -4,12 +4,63 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-azul: #5b7c9d;
+  --color-azul-claro: #e4ebf3;
+  --color-bordo: #7a2333;
+  --color-bordo-hover: #6a1e2b;
+  --color-rojo: #b85c56;
+  --color-rojo-claro: #f5dedc;
+  --color-dorado: #b98a3e;
+  --color-dorado-claro: #f6ead3;
+  --color-verde: #5f8f55;
+  --color-verde-claro: #e6efe1;
+  --color-tinta: #2b2b28;
+  --color-texto2: #6b6860;
+  --color-texto3: #b0ada4;
+  --color-borde: #e6e2d8;
+  --color-borde2: #f0ece1;
+  --color-tiza: #faf8f4;
+  --color-card: #ffffff;
+}
+
+.dark {
+  --color-azul: #86a9cc;
+  --color-azul-claro: #223349;
+  --color-bordo: #c25a70;
+  --color-bordo-hover: #cf6d82;
+  --color-rojo: #e08c86;
+  --color-rojo-claro: #3a2523;
+  --color-dorado: #dcb670;
+  --color-dorado-claro: #3a301c;
+  --color-verde: #8ec081;
+  --color-verde-claro: #223420;
+  --color-tinta: #eeeae2;
+  --color-texto2: #a9a598;
+  --color-texto3: #6d6a61;
+  --color-borde: #34322c;
+  --color-borde2: #2b2924;
+  --color-tiza: #171613;
+  --color-card: #211f1b;
+}
+
 body {
   font-family: "Inter", sans-serif;
+  transition: background-color 0.15s ease;
 }
 
 @media print {
-  body {
+  body,
+  .dark body {
     background: white !important;
+  }
+  :root,
+  .dark {
+    --color-tiza: #ffffff;
+    --color-card: #ffffff;
+    --color-tinta: #2b2b28;
+    --color-texto2: #6b6860;
+    --color-borde: #e6e2d8;
+    --color-borde2: #f0ece1;
   }
 }

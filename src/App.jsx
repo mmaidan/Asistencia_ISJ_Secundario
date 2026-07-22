@@ -90,6 +90,10 @@ export default function App() {
             {tab === "usuarios" && <GestionUsuarios miId={sesion.id} />}
           </>
         )}
+
+        <div className="text-center text-xs text-texto3 mt-10 print:hidden">
+          Desarrollado por Prof. Maidán Marcos Exequiel
+        </div>
       </div>
     </div>
   );
