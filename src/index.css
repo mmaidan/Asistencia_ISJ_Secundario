@@ -7,3 +7,9 @@
 body {
   font-family: "Inter", sans-serif;
 }
+
+@media print {
+  body {
+    background: white !important;
+  }
+}

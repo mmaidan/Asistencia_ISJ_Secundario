@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Calendar, BarChart3, Bell, Users, CalendarClock, Users2, FileText } from "lucide-react";
 import { getSesion, cerrarSesion } from "./lib/auth";
-import { listarCursos } from "./lib/cursosApi";
 import Login from "./components/Login";
 import Header from "./components/Header";
 import ProfesorView from "./components/ProfesorView";
@@ -19,20 +18,11 @@ export default function App() {
   const [sesion, setSesion] = useState(null);
   const [listo, setListo] = useState(false);
   const [tab, setTab] = useState("hoy");
-  const [cursoPreceptor, setCursoPreceptor] = useState(null);
 
   useEffect(() => {
     setSesion(getSesion());
     setListo(true);
   }, []);
-
-  useEffect(() => {
-    if (sesion?.rol === "preceptor" && sesion.curso_id) {
-      listarCursos().then((cursos) => {
-        setCursoPreceptor(cursos.find((c) => c.id === sesion.curso_id) || null);
-      });
-    }
-  }, [sesion]);
 
   function salir() {
     cerrarSesion();
@@ -47,14 +37,15 @@ export default function App() {
   }
 
   const esSuperusuario = sesion.rol === "rector" || sesion.rol === "directivo";
+  const gradoPreceptor = sesion.rol === "preceptor" ? sesion.grados?.[0] || null : null;
 
   return (
-    <div className="min-h-screen bg-tiza">
-      <div className="max-w-3xl mx-auto px-6 py-8">
+    <div className="min-h-screen bg-tiza print:bg-white">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         <Header
           rol={sesion.rol}
           nombre={sesion.nombre}
-          subtitulo={sesion.rol === "preceptor" ? cursoPreceptor?.nombre : null}
+          subtitulo={gradoPreceptor ? `${gradoPreceptor}° año` : null}
           onSalir={salir}
         />
 
@@ -62,11 +53,11 @@ export default function App() {
           <ProfesorView grados={sesion.grados} genero={sesion.genero} userId={sesion.id} />
         )}
 
-        {sesion.rol === "preceptor" && <PreceptorView cursoId={sesion.curso_id} />}
+        {sesion.rol === "preceptor" && <PreceptorView grado={gradoPreceptor} />}
 
         {esSuperusuario && (
           <>
-            <div className="flex gap-1.5 mb-6 bg-white border border-borde rounded-xl p-1 w-fit flex-wrap">
+            <div className="flex gap-1.5 mb-6 bg-white border border-borde rounded-xl p-1 w-fit flex-wrap print:hidden">
               <TabBtn active={tab === "hoy"} onClick={() => setTab("hoy")} icon={Calendar}>
                 Estado del día
               </TabBtn>
