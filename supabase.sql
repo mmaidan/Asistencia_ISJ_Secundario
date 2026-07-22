@@ -24,6 +24,7 @@ create table if not exists public.usuarios (
   nombre text not null,
   rol text not null check (rol in ('profesor', 'preceptor', 'rector')),
   grados int[] null,
+  genero text check (genero in ('Varones', 'Mujeres')),
   created_at timestamptz not null default now()
 );
 
