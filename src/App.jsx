@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Calendar, BarChart3, Bell, Users, CalendarClock, Users2, FileText } from "lucide-react";
 import { getSesion, cerrarSesion } from "./lib/auth";
+import { listarCursos } from "./lib/cursosApi";
 import Login from "./components/Login";
 import Header from "./components/Header";
 import ProfesorView from "./components/ProfesorView";
+import PreceptorView from "./components/PreceptorView";
 import EstadoDelDia from "./components/EstadoDelDia";
 import Estadisticas from "./components/Estadisticas";
 import Alertas from "./components/Alertas";
@@ -17,11 +19,20 @@ export default function App() {
   const [sesion, setSesion] = useState(null);
   const [listo, setListo] = useState(false);
   const [tab, setTab] = useState("hoy");
+  const [cursoPreceptor, setCursoPreceptor] = useState(null);
 
   useEffect(() => {
     setSesion(getSesion());
     setListo(true);
   }, []);
+
+  useEffect(() => {
+    if (sesion?.rol === "preceptor" && sesion.curso_id) {
+      listarCursos().then((cursos) => {
+        setCursoPreceptor(cursos.find((c) => c.id === sesion.curso_id) || null);
+      });
+    }
+  }, [sesion]);
 
   function salir() {
     cerrarSesion();
@@ -35,18 +46,25 @@ export default function App() {
     return <Login onLogin={setSesion} />;
   }
 
+  const esSuperusuario = sesion.rol === "rector" || sesion.rol === "directivo";
+
   return (
     <div className="min-h-screen bg-tiza">
       <div className="max-w-3xl mx-auto px-6 py-8">
-        <Header rol={sesion.rol} nombre={sesion.nombre} onSalir={salir} />
+        <Header
+          rol={sesion.rol}
+          nombre={sesion.nombre}
+          subtitulo={sesion.rol === "preceptor" ? cursoPreceptor?.nombre : null}
+          onSalir={salir}
+        />
 
         {sesion.rol === "profesor" && (
           <ProfesorView grados={sesion.grados} genero={sesion.genero} userId={sesion.id} />
         )}
 
-        {sesion.rol === "preceptor" && <EstadoDelDia />}
+        {sesion.rol === "preceptor" && <PreceptorView cursoId={sesion.curso_id} />}
 
-        {sesion.rol === "rector" && (
+        {esSuperusuario && (
           <>
             <div className="flex gap-1.5 mb-6 bg-white border border-borde rounded-xl p-1 w-fit flex-wrap">
               <TabBtn active={tab === "hoy"} onClick={() => setTab("hoy")} icon={Calendar}>
