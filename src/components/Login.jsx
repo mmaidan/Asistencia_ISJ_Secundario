@@ -8,10 +8,12 @@ export default function Login({ onLogin }) {
   const [error, setError] = useState("");
   const [cargando, setCargando] = useState(false);
 
+  const esRector = usuario.trim().toLowerCase() === "rector";
+
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
-    if (!usuario.trim() || !clave) {
+    if (!usuario.trim() || (!esRector && !clave)) {
       setError("Completá usuario y contraseña.");
       return;
     }
@@ -51,14 +53,22 @@ export default function Login({ onLogin }) {
             placeholder="profe1 / preceptor / rector"
             className="w-full box-border border border-borde rounded-lg px-3 py-2.5 bg-white text-tinta mb-4 text-[15px]"
           />
-          <label className="block text-xs font-medium text-texto2 mb-1.5">Contraseña</label>
-          <input
-            type="password"
-            value={clave}
-            onChange={(e) => setClave(e.target.value)}
-            placeholder="••••••••"
-            className="w-full box-border border border-borde rounded-lg px-3 py-2.5 bg-white text-tinta text-[15px]"
-          />
+          {esRector ? (
+            <div className="text-xs text-texto3 mb-1.5">
+              El usuario "rector" no necesita contraseña por el momento.
+            </div>
+          ) : (
+            <>
+              <label className="block text-xs font-medium text-texto2 mb-1.5">Contraseña</label>
+              <input
+                type="password"
+                value={clave}
+                onChange={(e) => setClave(e.target.value)}
+                placeholder="••••••••"
+                className="w-full box-border border border-borde rounded-lg px-3 py-2.5 bg-white text-tinta text-[15px]"
+              />
+            </>
+          )}
           {error && <div className="text-rojo text-sm mt-2.5">{error}</div>}
           <button
             type="submit"
