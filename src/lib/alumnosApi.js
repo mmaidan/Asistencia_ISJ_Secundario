@@ -21,6 +21,14 @@ export async function eliminarAlumno(id) {
   if (error) throw error;
 }
 
+export async function actualizarAlumno(id, { apellido, nombre, sexo, cursoId }) {
+  const { error } = await supabase
+    .from("alumnos")
+    .update({ apellido, nombre, sexo, curso_id: cursoId })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function importarAlumnos(filas) {
   // filas: [{ apellido, nombre, sexo, cursoId }]
   const { error } = await supabase.from("alumnos").insert(
