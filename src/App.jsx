@@ -81,7 +81,7 @@ export default function App() {
               </TabBtn>
             </div>
 
-            {tab === "hoy" && <EstadoDelDia />}
+            {tab === "hoy" && <EstadoDelDia userId={sesion.id} />}
             {tab === "stats" && <Estadisticas />}
             {tab === "alertas" && <Alertas />}
             {tab === "reportes" && <Reportes />}
