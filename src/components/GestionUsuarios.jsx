@@ -1,26 +1,36 @@
 import { useEffect, useState } from "react";
 import { UserPlus, KeyRound, Trash2, Users } from "lucide-react";
 import { GRADOS } from "../lib/data";
+import { listarCursos } from "../lib/cursosApi";
 import {
   listarUsuarios,
   crearUsuario,
   actualizarGrados,
   actualizarGenero,
+  actualizarCursoPreceptor,
   resetearClave,
   eliminarUsuario,
 } from "../lib/usuariosApi";
 
-const ROL_LABEL = { profesor: "Profesor", preceptor: "Preceptor", rector: "Rector" };
+const ROL_LABEL = {
+  profesor: "Profesor",
+  preceptor: "Preceptor",
+  directivo: "Directivo",
+  rector: "Rector",
+};
 
 export default function GestionUsuarios({ miId }) {
   const [usuarios, setUsuarios] = useState([]);
+  const [cursos, setCursos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
   async function recargar() {
     setCargando(true);
     try {
-      setUsuarios(await listarUsuarios());
+      const [u, c] = await Promise.all([listarUsuarios(), listarCursos()]);
+      setUsuarios(u);
+      setCursos(c);
     } catch (e) {
       setError("No se pudo cargar la lista de usuarios.");
     }
@@ -33,7 +43,7 @@ export default function GestionUsuarios({ miId }) {
 
   return (
     <div>
-      <NuevoUsuario onCreado={recargar} setError={setError} />
+      <NuevoUsuario cursos={cursos} onCreado={recargar} setError={setError} />
 
       {error && <div className="text-rojo text-sm mb-4">{error}</div>}
 
@@ -49,6 +59,7 @@ export default function GestionUsuarios({ miId }) {
             <FilaUsuario
               key={u.id}
               usuario={u}
+              cursos={cursos}
               esUno={u.id === miId}
               onCambio={recargar}
               setError={setError}
@@ -83,13 +94,40 @@ function SelectorGenero({ valor, onChange }) {
   );
 }
 
-function NuevoUsuario({ onCreado, setError }) {
+function SelectorCurso({ cursos, valor, onChange }) {
+  const porGrado = {};
+  cursos.forEach((c) => {
+    if (!porGrado[c.grado]) porGrado[c.grado] = [];
+    porGrado[c.grado].push(c);
+  });
+  return (
+    <select
+      value={valor || ""}
+      onChange={(e) => onChange(e.target.value)}
+      className="w-full box-border border border-borde rounded-lg px-3 py-2.5 text-tinta"
+    >
+      <option value="">— Elegir curso —</option>
+      {Object.entries(porGrado).map(([grado, lista]) => (
+        <optgroup key={grado} label={`${grado}°`}>
+          {lista.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.division} — {c.genero}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
+
+function NuevoUsuario({ cursos, onCreado, setError }) {
   const [nombre, setNombre] = useState("");
   const [usuario, setUsuario] = useState("");
   const [clave, setClave] = useState("");
   const [rol, setRol] = useState("profesor");
   const [grados, setGrados] = useState([]);
   const [genero, setGenero] = useState("");
+  const [cursoId, setCursoId] = useState("");
   const [guardando, setGuardando] = useState(false);
 
   function toggleGrado(g) {
@@ -107,14 +145,19 @@ function NuevoUsuario({ onCreado, setError }) {
       setError("Elegí si el profesor da clase a Varones o a Mujeres.");
       return;
     }
+    if (rol === "preceptor" && !cursoId) {
+      setError("Elegí qué curso tiene a cargo el preceptor.");
+      return;
+    }
     setGuardando(true);
     try {
-      await crearUsuario({ usuario, clave, nombre, rol, grados, genero });
+      await crearUsuario({ usuario, clave, nombre, rol, grados, genero, cursoId });
       setNombre("");
       setUsuario("");
       setClave("");
       setGrados([]);
       setGenero("");
+      setCursoId("");
       onCreado();
     } catch (e) {
       setError(
@@ -150,6 +193,7 @@ function NuevoUsuario({ onCreado, setError }) {
           >
             <option value="profesor">Profesor de Educación Física</option>
             <option value="preceptor">Preceptor</option>
+            <option value="directivo">Directivo (superusuario)</option>
           </select>
         </div>
         <div>
@@ -201,6 +245,20 @@ function NuevoUsuario({ onCreado, setError }) {
         </>
       )}
 
+      {rol === "preceptor" && (
+        <div className="mb-4">
+          <label className="block text-xs font-medium text-texto2 mb-2">Curso a cargo</label>
+          <SelectorCurso cursos={cursos} valor={cursoId} onChange={setCursoId} />
+        </div>
+      )}
+
+      {rol === "directivo" && (
+        <div className="mb-4 text-sm text-texto2 bg-tiza rounded-lg px-3 py-2.5">
+          Un Directivo tiene el mismo acceso completo que el Rector: ve todos los cursos, las
+          estadísticas, los reportes, y puede gestionar cursos, alumnos y usuarios.
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={guardando}
@@ -212,12 +270,15 @@ function NuevoUsuario({ onCreado, setError }) {
   );
 }
 
-function FilaUsuario({ usuario, esUno, onCambio, setError }) {
+function FilaUsuario({ usuario, cursos, esUno, onCambio, setError }) {
   const [grados, setGrados] = useState(usuario.grados || []);
   const [genero, setGenero] = useState(usuario.genero || "");
+  const [cursoId, setCursoId] = useState(usuario.curso_id || "");
   const [editandoClave, setEditandoClave] = useState(false);
   const [nuevaClave, setNuevaClave] = useState("");
   const [ocupado, setOcupado] = useState(false);
+
+  const cursoActual = cursos.find((c) => c.id === usuario.curso_id);
 
   function toggleGrado(g) {
     setGrados((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g].sort()));
@@ -242,6 +303,18 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
       onCambio();
     } catch (e) {
       setError("No se pudo actualizar a quién le da clase.");
+    }
+    setOcupado(false);
+  }
+
+  async function cambiarCurso(nuevo) {
+    setCursoId(nuevo);
+    setOcupado(true);
+    try {
+      await actualizarCursoPreceptor(usuario.id, nuevo || null);
+      onCambio();
+    } catch (e) {
+      setError("No se pudo actualizar el curso a cargo.");
     }
     setOcupado(false);
   }
@@ -281,6 +354,7 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
           <div className="text-xs text-texto2">
             @{usuario.usuario} · {ROL_LABEL[usuario.rol]}
             {usuario.rol === "profesor" && usuario.genero && ` · ${usuario.genero}`}
+            {usuario.rol === "preceptor" && cursoActual && ` · ${cursoActual.nombre}`}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -353,6 +427,15 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
             </div>
           </div>
         </>
+      )}
+
+      {usuario.rol === "preceptor" && (
+        <div className="mt-2">
+          <div className="text-xs text-texto2 mb-1.5">Curso a cargo</div>
+          <div className="max-w-xs">
+            <SelectorCurso cursos={cursos} valor={cursoId} onChange={cambiarCurso} />
+          </div>
+        </div>
       )}
     </div>
   );
