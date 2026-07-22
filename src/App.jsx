@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Calendar, BarChart3, Bell, Users, CalendarClock, Users2 } from "lucide-react";
+import { Calendar, BarChart3, Bell, Users, CalendarClock, Users2, FileText } from "lucide-react";
 import { getSesion, cerrarSesion } from "./lib/auth";
 import Login from "./components/Login";
 import Header from "./components/Header";
@@ -10,6 +10,7 @@ import Alertas from "./components/Alertas";
 import GestionUsuarios from "./components/GestionUsuarios";
 import GestionCursos from "./components/GestionCursos";
 import GestionAlumnos from "./components/GestionAlumnos";
+import Reportes from "./components/Reportes";
 import { TabBtn } from "./components/AttendanceUI";
 
 export default function App() {
@@ -57,6 +58,9 @@ export default function App() {
               <TabBtn active={tab === "alertas"} onClick={() => setTab("alertas")} icon={Bell}>
                 Alertas
               </TabBtn>
+              <TabBtn active={tab === "reportes"} onClick={() => setTab("reportes")} icon={FileText}>
+                Reportes
+              </TabBtn>
               <TabBtn active={tab === "cursos"} onClick={() => setTab("cursos")} icon={CalendarClock}>
                 Cursos
               </TabBtn>
@@ -71,6 +75,7 @@ export default function App() {
             {tab === "hoy" && <EstadoDelDia />}
             {tab === "stats" && <Estadisticas />}
             {tab === "alertas" && <Alertas />}
+            {tab === "reportes" && <Reportes />}
             {tab === "cursos" && <GestionCursos />}
             {tab === "alumnos" && <GestionAlumnos />}
             {tab === "usuarios" && <GestionUsuarios miId={sesion.id} />}
