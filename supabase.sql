@@ -22,7 +22,7 @@ create table if not exists public.usuarios (
   usuario text unique not null,
   clave_hash text not null,
   nombre text not null,
-  rol text not null check (rol in ('profesor', 'preceptor', 'rector')),
+  rol text not null check (rol in ('profesor', 'preceptor', 'directivo', 'rector')),
   grados int[] null,
   genero text check (genero in ('Varones', 'Mujeres')),
   created_at timestamptz not null default now()
@@ -88,6 +88,11 @@ create policy "acceso app: editar cursos"
 create policy "acceso app: borrar cursos"
   on public.cursos for delete
   using (true);
+
+-- Ahora que ya existe "cursos", agregamos la referencia del preceptor a
+-- su curso a cargo (solo uno; no depende del género).
+alter table public.usuarios
+  add column if not exists curso_id uuid references public.cursos(id);
 
 -- ------------------------------------------------------------
 -- 3) Tabla de alumnos

@@ -99,11 +99,19 @@ Actualizando un proyecto ya existente
 ------------------------------------------
 
 Si ya habías corrido una versión anterior de `supabase.sql` (con
-`usuarios` ya cargado), **no vuelvas a correr `supabase.sql` entero** —
-en vez de eso, corré `migracion-cursos-alumnos.sql` una sola vez desde
-el SQL Editor. Agrega las tablas `cursos` y `alumnos`, y renueva
-`asistencias` para que las use (los usuarios y contraseñas que ya
-tenías cargados no se tocan).
+`usuarios` ya cargado), **no vuelvas a correr `supabase.sql` entero**.
+En vez de eso, corré estas migraciones una sola vez cada una, en este
+orden, desde el SQL Editor:
+
+1. `migracion-cursos-alumnos.sql` — agrega `cursos` y `alumnos`, y
+   renueva `asistencias` para que las use.
+2. `migracion-genero-profesor.sql` — agrega a qué género le da clase
+   cada profesor.
+3. `migracion-directivo-preceptor.sql` — agrega el rol Directivo y el
+   curso a cargo de cada preceptor.
+
+Ninguna de estas toca los usuarios y contraseñas que ya tenías
+cargados.
 
 ---
 
