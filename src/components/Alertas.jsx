@@ -12,6 +12,7 @@ export default function Alertas() {
   const [umbral, setUmbral] = useState(3);
   const [editandoUmbral, setEditandoUmbral] = useState(false);
   const [umbralTemp, setUmbralTemp] = useState("3");
+  const [errorUmbral, setErrorUmbral] = useState("");
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
@@ -38,7 +39,9 @@ export default function Alertas() {
       setUmbral(n);
       setEditandoUmbral(false);
     } catch (e) {
-      // si falla, dejamos el formulario abierto para reintentar
+      setErrorUmbral(
+        "No se pudo guardar. Si es la primera vez, puede que falte correr migracion-config-justificativos.sql en Supabase."
+      );
     }
   }
 
@@ -72,20 +75,23 @@ export default function Alertas() {
           registradas.
         </div>
         {editandoUmbral ? (
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              min="1"
-              value={umbralTemp}
-              onChange={(e) => setUmbralTemp(e.target.value)}
-              className="w-16 border border-borde rounded-lg px-2 py-1.5 text-sm text-tinta"
-            />
-            <button
-              onClick={guardarUmbral}
-              className="text-xs font-medium text-white bg-verde px-3 py-1.5 rounded-full border-none cursor-pointer"
-            >
-              Guardar
-            </button>
+          <div className="flex flex-col items-end gap-1.5">
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                min="1"
+                value={umbralTemp}
+                onChange={(e) => setUmbralTemp(e.target.value)}
+                className="w-16 border border-borde rounded-lg px-2 py-1.5 text-sm text-tinta"
+              />
+              <button
+                onClick={guardarUmbral}
+                className="text-xs font-medium text-white bg-verde px-3 py-1.5 rounded-full border-none cursor-pointer"
+              >
+                Guardar
+              </button>
+            </div>
+            {errorUmbral && <div className="text-rojo text-xs max-w-xs text-right">{errorUmbral}</div>}
           </div>
         ) : (
           <button

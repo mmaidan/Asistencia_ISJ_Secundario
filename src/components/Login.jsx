@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { loginUsuario } from "../lib/auth";
 import { LOGO_B64 } from "../lib/logo";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Login({ onLogin }) {
   const [usuario, setUsuario] = useState("");
@@ -28,7 +29,10 @@ export default function Login({ onLogin }) {
   }
 
   return (
-    <div className="min-h-screen bg-tiza flex items-center justify-center px-6">
+    <div className="min-h-screen bg-tiza flex items-center justify-center px-6 relative">
+      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+        <ThemeToggle />
+      </div>
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
           <img
@@ -78,6 +82,9 @@ export default function Login({ onLogin }) {
             {cargando ? "Ingresando..." : "Ingresar"}
           </button>
         </form>
+        <div className="text-center text-xs text-texto3 mt-6">
+          Desarrollado por Prof. Maidán Marcos Exequiel
+        </div>
       </div>
     </div>
   );

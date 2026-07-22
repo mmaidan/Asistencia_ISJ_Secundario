@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { UserPlus, KeyRound, Trash2, Users, Search, X } from "lucide-react";
+import { UserPlus, KeyRound, Trash2, Users, Search, X, Pencil } from "lucide-react";
 import { GRADOS } from "../lib/data";
 import {
   listarUsuarios,
@@ -7,6 +7,7 @@ import {
   actualizarGrados,
   actualizarGenero,
   actualizarGradoPreceptor,
+  actualizarNombre,
   resetearClave,
   eliminarUsuario,
 } from "../lib/usuariosApi";
@@ -301,6 +302,8 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
   const [gradoPreceptor, setGradoPreceptor] = useState(usuario.grados?.[0] || null);
   const [editandoClave, setEditandoClave] = useState(false);
   const [nuevaClave, setNuevaClave] = useState("");
+  const [editandoNombre, setEditandoNombre] = useState(false);
+  const [nombreTemp, setNombreTemp] = useState(usuario.nombre);
   const [ocupado, setOcupado] = useState(false);
 
   function toggleGrado(g) {
@@ -355,6 +358,19 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
     setOcupado(false);
   }
 
+  async function guardarNombre() {
+    if (!nombreTemp.trim()) return;
+    setOcupado(true);
+    try {
+      await actualizarNombre(usuario.id, nombreTemp);
+      setEditandoNombre(false);
+      onCambio();
+    } catch (e) {
+      setError("No se pudo cambiar el nombre.");
+    }
+    setOcupado(false);
+  }
+
   async function borrar() {
     if (!confirm(`¿Borrar el usuario "${usuario.usuario}"? Esta acción no se puede deshacer.`)) return;
     setOcupado(true);
@@ -382,6 +398,15 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => {
+              setEditandoNombre((v) => !v);
+              setNombreTemp(usuario.nombre);
+            }}
+            className="flex items-center gap-1 text-xs font-medium text-texto2 bg-tiza px-3 py-1.5 rounded-full border-none cursor-pointer"
+          >
+            <Pencil size={13} /> Editar nombre
+          </button>
+          <button
             onClick={() => setEditandoClave((v) => !v)}
             className="flex items-center gap-1 text-xs font-medium text-azul bg-azul-claro px-3 py-1.5 rounded-full border-none cursor-pointer"
           >
@@ -398,6 +423,24 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
           )}
         </div>
       </div>
+
+      {editandoNombre && (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2 mb-3">
+          <input
+            value={nombreTemp}
+            onChange={(e) => setNombreTemp(e.target.value)}
+            placeholder="Nombre y apellido"
+            className="flex-1 box-border border border-borde rounded-lg px-3 py-2 text-sm text-tinta"
+          />
+          <button
+            onClick={guardarNombre}
+            disabled={ocupado || !nombreTemp.trim()}
+            className="bg-verde disabled:opacity-70 text-white text-sm font-medium px-3 py-2 rounded-lg border-none cursor-pointer"
+          >
+            Guardar
+          </button>
+        </div>
+      )}
 
       {editandoClave && (
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2 mb-3">
