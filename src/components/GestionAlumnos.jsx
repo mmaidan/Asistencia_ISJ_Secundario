@@ -138,6 +138,26 @@ function ImportarCSV({ cursos, onImportado }) {
     setFilas((prev) => prev.map((f, i) => (i === idx ? { ...f, cursoId, valido: cursoId ? f.valido : false } : f)));
   }
 
+  function actualizarSexoFila(idx, nuevoSexo) {
+    setFilas((prev) =>
+      prev.map((f, i) => {
+        if (i !== idx) return f;
+        const cursoActual = cursos.find((c) => c.id === f.cursoId);
+        const division = cursoActual?.division || f.divisionDetectada || "A";
+        const nuevoCursoId = f.grado
+          ? cursos.find((c) => c.grado === f.grado && c.division === division && c.genero === nuevoSexo)
+              ?.id || null
+          : null;
+        return {
+          ...f,
+          sexo: nuevoSexo,
+          cursoId: nuevoCursoId,
+          valido: Boolean(f.apellido && f.nombre && nuevoSexo && f.grado),
+        };
+      })
+    );
+  }
+
   async function confirmarImportacion() {
     const listas = filas.filter((f) => f.valido && f.cursoId);
     setImportando(true);
@@ -211,7 +231,17 @@ function ImportarCSV({ cursos, onImportado }) {
                     <td className="px-3 py-2 text-texto3">{f.fila}</td>
                     <td className="px-3 py-2 text-tinta">{f.apellido || "—"}</td>
                     <td className="px-3 py-2 text-tinta">{f.nombre || "—"}</td>
-                    <td className="px-3 py-2 text-tinta">{f.sexo || f.sexoRaw || "—"}</td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={f.sexo || ""}
+                        onChange={(e) => actualizarSexoFila(i, e.target.value)}
+                        className="border border-borde rounded-lg px-2 py-1 text-xs text-tinta"
+                      >
+                        <option value="">— Elegir —</option>
+                        <option value="Varones">Varones</option>
+                        <option value="Mujeres">Mujeres</option>
+                      </select>
+                    </td>
                     <td className="px-3 py-2">
                       <select
                         value={f.cursoId || ""}
