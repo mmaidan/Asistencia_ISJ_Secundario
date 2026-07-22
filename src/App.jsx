@@ -39,7 +39,9 @@ export default function App() {
       <div className="max-w-3xl mx-auto px-6 py-8">
         <Header rol={sesion.rol} nombre={sesion.nombre} onSalir={salir} />
 
-        {sesion.rol === "profesor" && <ProfesorView grados={sesion.grados} userId={sesion.id} />}
+        {sesion.rol === "profesor" && (
+          <ProfesorView grados={sesion.grados} genero={sesion.genero} userId={sesion.id} />
+        )}
 
         {sesion.rol === "preceptor" && <EstadoDelDia />}
 
