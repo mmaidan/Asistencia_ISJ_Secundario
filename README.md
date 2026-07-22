@@ -1,340 +1,198 @@
-<div align="center">
+Asistencia de Educación Física — Instituto San José
+====================================================
 
-# 🏃‍♂️ Asistencia EF — Instituto San José
+Esta carpeta es el código completo de la app. Para que funcione online
+hay que conectarla a una base de datos gratuita (Supabase) y publicarla
+como sitio web (Vercel). Se puede hacer todo desde el navegador, sin
+usar la terminal, salvo el paso opcional de probarla en tu computadora.
 
-### Planilla digital de asistencia de Educación Física
-
-*Quines — San Luis*
-
-![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)
-![React](https://img.shields.io/badge/React-18-149ECA?style=for-the-badge&logo=react&logoColor=white)
-![Tailwind](https://img.shields.io/badge/Tailwind-3-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
-![Vercel](https://img.shields.io/badge/Deploy-Vercel-black?style=for-the-badge&logo=vercel)
-
-</div>
+No hace falta saber programar para seguir estos pasos, pero sí seguir
+el orden.
 
 ---
 
-## 💡 El problema que resuelve
+Paso 1 — Crear la base de datos (Supabase, gratis)
+---------------------------------------------------
 
-> El colegio cursa a la mañana. Educación Física se dicta a la tarde.
-> El preceptor y el rectorado nunca saben, en el momento, si el profe
-> tomó asistencia — y los pibes que faltan quedan sin registrar hasta
-> el día siguiente.
-
-**Esta app cierra esa brecha:** el profe marca presente/ausente/tarde
-desde el celular en la cancha, y el preceptor y el rector lo ven
-reflejado al instante.
-
----
-
-## 📚 Índice
-
-1. [¿Qué incluye?](#-qué-incluye)
-2. [Cómo se ve por rol](#-cómo-se-ve-por-rol)
-3. [Cómo funcionan los usuarios](#-cómo-funcionan-los-usuarios)
-4. [Arquitectura](#️-arquitectura)
-5. [🚀 Puesta en marcha, paso a paso](#-puesta-en-marcha-paso-a-paso)
-6. [🔑 Acceso inicial](#-acceso-inicial)
-7. [🗂️ Estructura del proyecto](#️-estructura-del-proyecto)
-8. [🎨 Paleta institucional](#-paleta-institucional)
-9. [🛠️ Notas técnicas y limitaciones](#️-notas-técnicas-y-limitaciones)
-10. [❓ Preguntas frecuentes](#-preguntas-frecuentes)
-
----
-
-## ✅ ¿Qué incluye?
-
-| | |
-|---|---|
-| 🔐 | Login simple con **usuario y contraseña** (sin email, sin confirmación de correo) |
-| 🧑‍💼 | El **rector** da de alta, edita y borra usuarios desde una pestaña dentro de la propia app |
-| 🎯 | El rector asigna, con un click, **qué años tiene a cargo cada profesor** |
-| 🏫 | Cursos de **1° a 6° año**, divisiones A/B, separados por **Varones / Mujeres** |
-| ✅ | Toma de asistencia con un toque: Presente · Ausente · Tarde |
-| 👀 | El **preceptor** ve en vivo qué cursos ya tienen asistencia tomada y cuáles no |
-| 📊 | El **rector** ve además estadísticas de asistencia y alertas de ausentismo |
-| ☁️ | Todo guardado en **Postgres (Supabase)** — accesible desde cualquier dispositivo |
-| 🌐 | Deploy gratuito en **Vercel** |
-
----
-
-## 👥 Cómo se ve por rol
-
-<table>
-<tr>
-<td width="33%" valign="top">
-
-### 🏃 Profesor
-- Ve solo los cursos que el rector le asignó
-- Marca presente/ausente/tarde por alumno
-- "Marcar todos presentes" con un click
-- Ve la hora exacta en que guardó cada clase
-
-</td>
-<td width="33%" valign="top">
-
-### 📋 Preceptor
-- Ve **todos** los cursos del día, por año
-- Verde: asistencia tomada (+ hora)
-- Dorado: todavía sin registrar
-- Puede navegar a fechas anteriores
-
-</td>
-<td width="33%" valign="top">
-
-### 🎓 Rector (superusuario)
-- Todo lo del preceptor, más:
-- 📈 % de asistencia por curso
-- 🚨 Alertas de 3+ ausencias
-- 👥 **Pestaña "Usuarios"**: alta, baja y edición de profes/preceptor
-
-</td>
-</tr>
-</table>
-
----
-
-## 🔑 Cómo funcionan los usuarios
-
-No hay emails ni links de confirmación. El **rector** es quien controla todo desde la pestaña **"Usuarios"**:
-
-```
-┌────────────────────────────────────────────┐
-│  👥 Usuarios                                 │
-│                                                │
-│  ➕ Dar de alta un usuario                     │
-│     Nombre: __________  Rol: [Profesor ▾]     │
-│     Usuario: ________   Contraseña: ______    │
-│     Cursos a cargo:  1° 2° [3°] [4°] 5° 6°    │
-│     [ Crear usuario ]                          │
-│                                                │
-│  📋 Usuarios existentes                        │
-│     Prof. Ana Gómez  @profe4 · Profesor        │
-│       [ 🔑 Cambiar clave ]  [ 🗑️ Borrar ]        │
-│       Cursos: 1° 2° [3°] [4°] 5° 6°  [Guardar] │
-└────────────────────────────────────────────┘
-```
-
-- Al crear un profesor, el rector toca los años que tiene a cargo
-  (podés tocar varios, ej. 3° y 4°) — eso es lo que después filtra
-  qué cursos ve ese profe al tomar asistencia.
-- Se puede **resetear la contraseña** de cualquiera en cualquier momento
-  (por si alguien la olvida), y **borrar** usuarios que ya no correspondan.
-- Las contraseñas nunca se guardan en texto plano: se transforman con
-  SHA-256 en el propio navegador antes de guardarse o compararse.
-
----
-
-## 🏗️ Arquitectura
-
-```
-┌─────────────┐      ┌──────────────────┐      ┌─────────────────┐
-│  Vite + React │ ───▶ │  tabla "usuarios"  │      │   Vercel          │
-│  (frontend)   │      │  (login propio)    │      │  (hosting online) │
-└──────┬────────┘      └────────────────────┘      └────────▲──────────┘
-       │                                                       │
-       ▼                                                       │
-┌──────────────────────┐                                       │
-│  Supabase Postgres    │ ── tabla "asistencias" ──────────────┘
-│  (base de datos)       │ ── tabla "usuarios" (roles y claves)
-└────────────────────────┘
-```
-
-- **GitHub** guarda el código y dispara el deploy automático en Vercel.
-- **Supabase** se usa únicamente como base de datos (Postgres) — no
-  usamos Supabase Auth, porque el login lo maneja la propia app.
-
----
-
-## 🚀 Puesta en marcha, paso a paso
-
-### 1️⃣ Crear el proyecto en Supabase
-
-1. Entrá a **[supabase.com](https://supabase.com)** → creá una cuenta gratuita → **New project**.
-2. Esperá a que termine de aprovisionarse (1-2 minutos).
-3. Andá a **⚙️ Project Settings → API** y copiá:
+1. Andá a https://supabase.com y creá una cuenta gratis (con GitHub o email).
+2. Creá un proyecto nuevo (elegí cualquier nombre y contraseña, y una
+   región cercana, ej. South America).
+3. Cuando el proyecto esté listo, andá a **SQL Editor** (menú izquierdo)
+   → **New query**.
+4. Abrí el archivo `supabase.sql` de esta carpeta, copiá todo su
+   contenido, pegalo ahí, y tocá **Run**.
+   - Esto crea las tablas (`usuarios`, `cursos`, `alumnos`, `asistencias`),
+     carga los 24 cursos (1° a 6°, A/B, Varones/Mujeres) y un usuario
+     **rector** de arranque (sin contraseña, por el momento).
+   - **¿Ya tenías el proyecto anterior armado?** No corras este archivo
+     de nuevo — usá `migracion-cursos-alumnos.sql` en su lugar (ver más
+     abajo, en "Actualizando un proyecto ya existente").
+5. Andá a **Project Settings** (ícono de engranaje) → **API**. Vas a
+   necesitar dos datos:
    - `Project URL`
-   - `anon public` key
+   - `anon public key`
 
-### 2️⃣ Crear las tablas
+Paso 2 — Conectar la app a esa base de datos
+---------------------------------------------
 
-Andá a **SQL Editor → New query**, pegá el contenido completo de
-[`supabase.sql`](./supabase.sql) y tocá **Run**.
+1. En esta carpeta, hacé una copia del archivo `.env.example` y
+   renombrala a `.env`.
+2. Completá los dos valores que copiaste de Supabase:
 
-Esto crea:
-- la tabla `usuarios` (usuario, contraseña hasheada, rol, años a cargo)
-- la tabla `asistencias`
-- **un usuario rector inicial**: `rector` / `rector2026` (cambialo apenas entres)
-
-### 3️⃣ Configurar las variables de entorno
-
-Copiá `.env.example` a `.env` y completá:
-
-```env
-VITE_SUPABASE_URL=https://TU-PROYECTO.supabase.co
-VITE_SUPABASE_ANON_KEY=tu-anon-key
+```
+VITE_SUPABASE_URL=https://xxxxx.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOi....
 ```
 
-### 4️⃣ Probarlo en tu computadora (opcional)
+Paso 3 — Probarla en tu computadora (opcional pero recomendado)
+------------------------------------------------------------------
 
-Necesitás **[Node.js](https://nodejs.org)** (18 o superior):
+Necesitás tener Node.js instalado (versión 18 o más nueva). Después,
+en esta carpeta:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abrí `http://localhost:5173`, entrá con `rector` / `rector2026`, y desde
-la pestaña **Usuarios** cargá a tus profes de verdad.
+Se abre en `http://localhost:5173`. Entrá con `rector` / `rector2026` y
+probá dar de alta un profesor desde la pestaña **Usuarios**.
 
-### 5️⃣ Subirlo a GitHub
+Paso 4 — Publicarla como sitio web (gratis)
+----------------------------------------------
 
-```bash
-git init
-git add .
-git commit -m "Primera version de la app de asistencia"
-git remote add origin https://github.com/TU-USUARIO/asistencia-ef.git
-git branch -M main
-git push -u origin main
+La forma más simple, sin usar la terminal:
+
+1. Subí esta carpeta a GitHub (podés arrastrar los archivos desde
+   github.com, creando un repositorio nuevo).
+2. Andá a https://vercel.com, entrá con tu cuenta de GitHub, tocá
+   **Add New → Project**, elegí el repositorio.
+3. En **Environment Variables**, cargá las mismas dos variables del
+   Paso 2 (`VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`).
+4. Tocá **Deploy**. En un minuto te da una URL tipo
+   `https://asistencia-ef.vercel.app` — esa es tu sitio, ya funcionando
+   y accesible desde cualquier celular con internet.
+
+Cada vez que subas cambios a GitHub, Vercel actualiza el sitio solo.
+
+Paso 5 — Primer ingreso, cursos, alumnos y usuarios reales
+---------------------------------------------------------------
+
+1. Entrá al sitio escribiendo `rector` como usuario (no pide contraseña
+   por el momento).
+2. Pestaña **Cursos**: revisá y ajustá el día y horario real de cada
+   uno de los 24 cursos (vienen con valores de ejemplo).
+3. Pestaña **Alumnos**: subí el CSV de matriculación real (el que ya
+   exporta el sistema del colegio, con columnas Apellidos, Nombres,
+   Sexo y Año). La app va a mostrarte una vista previa fila por fila
+   para que confirmes o corrijas a qué curso pertenece cada alumno
+   antes de importar (esto hace falta porque el sistema de
+   matriculación no siempre distingue divisiones A/B de la misma
+   manera que esta app).
+4. Pestaña **Usuarios**: dá de alta a cada profesor con su usuario,
+   contraseña, y los años que tiene a cargo (1° a 6°). Repetí para el
+   preceptor (sin marcar años).
+5. Compartí con cada uno su usuario y contraseña. Ya pueden entrar
+   desde su celular a la misma URL de Vercel.
+
+Actualizando un proyecto ya existente
+------------------------------------------
+
+Si ya habías corrido una versión anterior de `supabase.sql` (con
+`usuarios` ya cargado), **no vuelvas a correr `supabase.sql` entero** —
+en vez de eso, corré `migracion-cursos-alumnos.sql` una sola vez desde
+el SQL Editor. Agrega las tablas `cursos` y `alumnos`, y renueva
+`asistencias` para que las use (los usuarios y contraseñas que ya
+tenías cargados no se tocan).
+
+---
+
+Usuarios de arranque
+------------------------
+
+```
+usuario: rector    (sin contraseña, por el momento)
+usuario: admin     contraseña: admin
 ```
 
-### 6️⃣ Desplegar en Vercel
-
-1. Entrá a **[vercel.com](https://vercel.com)** con tu cuenta de GitHub.
-2. **Add New → Project** → elegí el repositorio.
-3. En **Environment Variables**, cargá `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
-4. **Deploy** 🎉 — te da una URL tipo `https://asistencia-ef.vercel.app`.
-
-Cada `git push` a `main` actualiza el sitio solo.
+Ambos son superusuarios (rol "rector"). El de `rector` no pide clave
+por el pedido temporal que ya quedó documentado más abajo; `admin` sí
+pide contraseña normalmente, por si preferís usar ese en vez de `rector`
+mientras dure el bypass.
 
 ---
 
-## 🔑 Acceso inicial
-
-<div align="center">
-
-| Usuario | Contraseña | Rol |
-|:---:|:---:|:---:|
-| `rector` | `rector2026` | Rector (superusuario) |
-
-</div>
-
-Con esa cuenta entrás por primera vez y, desde la pestaña **Usuarios**,
-das de alta a los profes y al preceptor con sus propias contraseñas.
-**Cambiá la contraseña del rector apenas entres.**
-
----
-
-## 🗂️ Estructura del proyecto
+Estructura de la carpeta
+----------------------------
 
 ```
-asistencia-ef-vite/
-├── index.html
-├── package.json
-├── vite.config.js
-├── tailwind.config.js
-├── postcss.config.js
-├── supabase.sql              ← tablas, políticas y rector inicial
-├── .env.example
-├── src/
-│   ├── main.jsx
-│   ├── App.jsx                 ← sesión y navegación por rol
-│   ├── index.css
-│   ├── lib/
-│   │   ├── data.js               ← cursos y alumnos (1° a 6°, A/B, Varones/Mujeres)
-│   │   ├── supabaseClient.js
-│   │   ├── auth.js                ← hash de contraseña, login, sesión
-│   │   ├── usuariosApi.js          ← alta/baja/edición de usuarios (panel rector)
-│   │   └── asistenciasApi.js       ← lectura/escritura de asistencias
-│   └── components/
-│       ├── Login.jsx
-│       ├── Header.jsx
-│       ├── ProfesorView.jsx
-│       ├── EstadoDelDia.jsx
-│       ├── Estadisticas.jsx
-│       ├── Alertas.jsx
-│       ├── GestionUsuarios.jsx    ← panel del rector
-│       └── AttendanceUI.jsx
-└── README.md
+index.html
+package.json
+vite.config.js
+tailwind.config.js
+supabase.sql                    -> tablas, cursos iniciales y usuarios de arranque
+migracion-cursos-alumnos.sql    -> para actualizar un proyecto Supabase ya existente
+.env.example                     -> copiar a .env y completar
+src/
+  main.jsx
+  App.jsx                   -> sesión y navegación por rol
+  lib/
+    data.js                   constantes (grados, días) y utilidades de fecha
+    supabaseClient.js
+    auth.js                    login y sesión (usuario/contraseña propios)
+    usuariosApi.js              alta/baja/edición de usuarios (panel rector)
+    cursosApi.js                lectura/edición de día y horario de cada curso
+    alumnosApi.js               alta, borrado e importación masiva de alumnos
+    asistenciasApi.js           lectura/escritura de asistencias
+  components/
+    Login.jsx
+    Header.jsx
+    ProfesorView.jsx           toma de asistencia
+    EstadoDelDia.jsx           vista de preceptor/rector
+    Estadisticas.jsx
+    Alertas.jsx
+    GestionUsuarios.jsx        panel del rector: usuarios
+    GestionCursos.jsx          panel del rector: día y horario
+    GestionAlumnos.jsx         panel del rector: importar/gestionar alumnos
 ```
 
 ---
 
-## 🎨 Paleta institucional
+Para tener en cuenta
+------------------------
 
-Colores tomados del escudo del Instituto San José, en tono pastel — ahora
-como colores custom de Tailwind (`bg-azul`, `text-bordo`, `bg-verde-claro`, etc.):
+- **El usuario "rector" entra sin contraseña por el momento.** Cualquiera
+  que escriba "rector" en el login entra como superusuario. Está así a
+  pedido explícito, para simplificar mientras se prueba la app. Antes de
+  usarla con datos reales, hay que volver a pedir contraseña: en
+  `src/lib/auth.js`, quitar el bloque marcado como "TEMPORAL" dentro de
+  `loginUsuario`.
+- No se usa Supabase Auth: el login es propio (usuario + contraseña,
+  sin email). Esto simplifica el alta de usuarios, pero significa que
+  la base de datos queda accesible con la clave pública del proyecto,
+  igual que cualquier app sin backend propio. Es razonable para una
+  escuela chica sin datos sensibles de terceros.
+- Las contraseñas de los demás usuarios se guardan hasheadas (nunca en
+  texto plano).
+- Los cursos y alumnos ya son editables desde la app (pestañas "Cursos"
+  y "Alumnos" del rector) — dejaron de ser datos fijos en el código.
+- La importación de alumnos por CSV adivina el curso de cada fila
+  cruzando Año + Sexo con la división (A/B). Cuando el sistema de
+  matriculación no distingue A/B (por ejemplo, secciones marcadas como
+  "única"), la app lo deja para elegir a mano en la vista previa antes
+  de confirmar.
 
-<div align="center">
+Ideas para más adelante
+----------------------------
 
-| Color | Uso | Clase Tailwind |
-|---|---|:---:|
-| 🔵 Azul | Institucional / botones secundarios | `azul` |
-| 🟥 Bordo | Botón principal (login, guardar) | `bordo` |
-| 🟢 Verde | Presentes / éxito | `verde` |
-| 🟡 Dorado | Llegadas tarde / advertencia | `dorado` |
-| 🔴 Rojo | Ausentes / alertas | `rojo` |
+Quedaron anotadas para una próxima vuelta (no están implementadas
+todavía):
 
-</div>
-
----
-
-## 🛠️ Notas técnicas y limitaciones
-
-- **Sin Supabase Auth:** el login es 100% propio. Esto simplifica mucho
-  el alta de usuarios (sin emails, sin confirmaciones), pero tiene una
-  contrapartida: las políticas de la base de datos quedan abiertas a
-  cualquiera que tenga la clave pública (`anon key`) del proyecto —igual
-  que en cualquier app sin backend propio. Es razonable para una escuela
-  chica sin datos sensibles de terceros, pero **no lo uses para
-  información delicada** (no hay nada como DNI, notas, etc. en esta app).
-- Las contraseñas se guardan hasheadas (SHA-256), no en texto plano, pero
-  esto **no reemplaza** un sistema de autenticación con backend propio si
-  en algún momento el proyecto crece y necesita más seguridad.
-- **Cursos y alumnos** (`src/lib/data.js`) son datos fijos en el código.
-  Pasarlos a una tabla editable desde la app es el siguiente paso natural.
-
----
-
-## ❓ Preguntas frecuentes
-
-<details>
-<summary><strong>¿Tiene costo?</strong></summary>
-<br>
-No, para una escuela: Supabase, GitHub y Vercel tienen planes gratuitos
-más que suficientes.
-</details>
-
-<details>
-<summary><strong>¿Cómo agrego un profesor nuevo?</strong></summary>
-<br>
-Entrás como rector → pestaña "Usuarios" → "Dar de alta un usuario" →
-completás nombre, usuario, contraseña y los años que tiene a cargo.
-No hace falta tocar la base de datos ni el código.
-</details>
-
-<details>
-<summary><strong>¿Qué pasa si un profesor se olvida la contraseña?</strong></summary>
-<br>
-El rector entra a la pestaña "Usuarios", busca a esa persona y toca
-"Cambiar clave" para resetearla.
-</details>
-
-<details>
-<summary><strong>¿Puede haber más de un rector?</strong></summary>
-<br>
-El SQL inicial crea uno solo, pero se puede dar de alta otro rector
-directamente desde el SQL Editor de Supabase con el mismo patrón que
-el usuario inicial (no está expuesto en la pestaña "Usuarios" para
-evitar crear superusuarios por error).
-</details>
-
----
-
-<div align="center">
-
-*Instituto San José — Quines, San Luis* 🎓
-
-</div>
+- Justificativos de ausencias (con motivo, ej. certificado médico)
+- Que cada profesor pueda cambiar su propia contraseña
+- Editar una asistencia ya guardada, con registro de quién la corrigió
+- Aviso automático al preceptor si pasado el horario de clase la
+  asistencia todavía no se cargó
+- Exportar reportes a PDF o Excel
+- Convertir la app en PWA (instalable en el celular con ícono propio)
+- Generalizar el esquema a otras materias, no solo Educación Física
