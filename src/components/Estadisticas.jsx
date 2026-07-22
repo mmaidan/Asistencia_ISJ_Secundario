@@ -1,85 +1,162 @@
 import { useEffect, useMemo, useState } from "react";
-import { BarChart3, TrendingUp } from "lucide-react";
+import { BarChart3 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 import { listarCursos } from "../lib/cursosApi";
 import { fetchTodasLasAsistencias } from "../lib/asistenciasApi";
+
+const COLOR_VERDE = "#5F8F55";
+const COLOR_ROJO = "#B85C56";
+const COLOR_DORADO = "#B98A3E";
+const COLOR_AZUL = "#5B7C9D";
 
 export default function Estadisticas() {
   const [cursos, setCursos] = useState(null);
   const [filas, setFilas] = useState([]);
+  const [cursoId, setCursoId] = useState("");
   const [cargando, setCargando] = useState(true);
 
   useEffect(() => {
     Promise.all([listarCursos(), fetchTodasLasAsistencias()]).then(([c, f]) => {
       setCursos(c);
       setFilas(f);
+      if (c.length > 0) setCursoId(c[0].id);
       setCargando(false);
     });
   }, []);
 
-  const stats = useMemo(() => {
-    if (!cursos) return [];
-    return cursos.map((c) => {
-      const filasCurso = filas.filter((f) => f.curso_id === c.id);
-      const clases = new Set(filasCurso.map((f) => f.fecha)).size;
-      let presentes = 0;
-      let ausentes = 0;
-      filasCurso.forEach((f) => {
-        if (f.estado === "presente") presentes++;
-        if (f.estado === "ausente") ausentes++;
-      });
-      const pct = filasCurso.length ? Math.round((presentes / filasCurso.length) * 100) : null;
-      return { curso: c, clases, pct, ausentes };
+  const cursosPorGrado = useMemo(() => {
+    if (!cursos) return {};
+    const map = {};
+    cursos.forEach((c) => {
+      if (!map[c.grado]) map[c.grado] = [];
+      map[c.grado].push(c);
     });
-  }, [cursos, filas]);
+    return map;
+  }, [cursos]);
+
+  const filasCurso = useMemo(() => filas.filter((f) => f.curso_id === cursoId), [filas, cursoId]);
+
+  const datosTorta = useMemo(() => {
+    let presente = 0,
+      ausente = 0,
+      tarde = 0;
+    filasCurso.forEach((f) => {
+      if (f.estado === "presente") presente++;
+      if (f.estado === "ausente") ausente++;
+      if (f.estado === "tarde") tarde++;
+    });
+    return [
+      { name: "Presentes", value: presente, color: COLOR_VERDE },
+      { name: "Ausentes", value: ausente, color: COLOR_ROJO },
+      { name: "Tarde", value: tarde, color: COLOR_DORADO },
+    ].filter((d) => d.value > 0);
+  }, [filasCurso]);
+
+  const datosBarras = useMemo(() => {
+    const porFecha = {};
+    filasCurso.forEach((f) => {
+      if (!porFecha[f.fecha]) porFecha[f.fecha] = { presente: 0, total: 0 };
+      porFecha[f.fecha].total++;
+      if (f.estado === "presente") porFecha[f.fecha].presente++;
+    });
+    return Object.entries(porFecha)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([fecha, v]) => ({
+        fecha: fecha.slice(5).split("-").reverse().join("/"), // DD/MM
+        porcentaje: Math.round((v.presente / v.total) * 100),
+      }));
+  }, [filasCurso]);
+
+  const totalMarcas = filasCurso.length;
+  const clases = new Set(filasCurso.map((f) => f.fecha)).size;
+  const curso = cursos?.find((c) => c.id === cursoId);
 
   if (cargando) {
     return <div className="text-center py-12 text-texto2">Cargando estadísticas...</div>;
   }
 
-  const conDatos = stats.filter((s) => s.clases > 0);
-
-  if (conDatos.length === 0) {
-    return (
-      <div className="text-center py-16 text-texto2">
-        <BarChart3 className="mx-auto mb-3 text-texto3" size={32} />
-        Todavía no hay clases registradas para calcular estadísticas.
-      </div>
-    );
-  }
-
-  const peor = [...conDatos].sort((a, b) => a.pct - b.pct)[0];
-
   return (
     <div>
-      <div className="bg-rojo-claro rounded-2xl px-5 py-4 mb-5 flex items-center gap-3">
-        <TrendingUp className="text-rojo" size={22} />
-        <div>
-          <div className="text-sm text-texto2">Curso con más ausentismo</div>
-          <div className="font-semibold text-tinta">
-            {peor.curso.nombre} — {100 - peor.pct}% de inasistencia
+      <div className="mb-5 max-w-xs">
+        <label className="block text-xs font-medium text-texto2 mb-1.5">Curso</label>
+        <select
+          value={cursoId}
+          onChange={(e) => setCursoId(e.target.value)}
+          className="w-full box-border border border-borde rounded-lg px-3 py-2.5 bg-white text-tinta font-medium"
+        >
+          {Object.entries(cursosPorGrado).map(([grado, lista]) => (
+            <optgroup key={grado} label={`${grado}°`}>
+              {lista.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.division} — {c.genero}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+
+      {totalMarcas === 0 ? (
+        <div className="text-center py-16 text-texto2">
+          <BarChart3 className="mx-auto mb-3 text-texto3" size={32} />
+          Todavía no hay clases registradas para {curso?.nombre}.
+        </div>
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="bg-white border border-borde rounded-2xl p-4 sm:p-5">
+            <div className="text-sm font-semibold text-tinta mb-1">Distribución general</div>
+            <div className="text-xs text-texto2 mb-2">{clases} clases registradas</div>
+            <div style={{ width: "100%", height: 220 }}>
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={datosTorta}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
+                  >
+                    {datosTorta.map((d) => (
+                      <Cell key={d.name} fill={d.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                  <Legend verticalAlign="bottom" height={24} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="bg-white border border-borde rounded-2xl p-4 sm:p-5">
+            <div className="text-sm font-semibold text-tinta mb-1">% de presentes por clase</div>
+            <div className="text-xs text-texto2 mb-2">{curso?.nombre}</div>
+            <div style={{ width: "100%", height: 220 }}>
+              <ResponsiveContainer>
+                <BarChart data={datosBarras} margin={{ left: -20 }}>
+                  <CartesianGrid vertical={false} stroke="#F0ECE1" />
+                  <XAxis dataKey="fecha" tick={{ fontSize: 11, fill: "#6B6860" }} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#6B6860" }} />
+                  <Tooltip formatter={(v) => [`${v}%`, "Presentes"]} />
+                  <Bar dataKey="porcentaje" fill={COLOR_AZUL} radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
-      </div>
-      <div className="grid gap-3">
-        {stats.map((s) => (
-          <div key={s.curso.id} className="bg-white border border-borde rounded-2xl px-5 py-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-semibold text-tinta">{s.curso.nombre}</span>
-              <span className="text-xs text-texto2">{s.clases} clases registradas</span>
-            </div>
-            {s.pct === null ? (
-              <div className="text-sm text-texto3">Sin datos todavía</div>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="flex-1 h-2 rounded-full bg-borde2 overflow-hidden">
-                  <div className="h-full rounded-full bg-verde" style={{ width: `${s.pct}%` }} />
-                </div>
-                <span className="font-mono text-sm font-semibold text-tinta w-12 text-right">{s.pct}%</span>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+      )}
     </div>
   );
 }

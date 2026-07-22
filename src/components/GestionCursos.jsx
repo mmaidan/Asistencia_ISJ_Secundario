@@ -66,8 +66,8 @@ function FilaCurso({ curso, onGuardado }) {
   }
 
   return (
-    <div className="bg-white border border-borde rounded-xl px-4 py-3 flex items-center gap-3 flex-wrap">
-      <div className="font-medium text-tinta w-40 shrink-0">{curso.nombre}</div>
+    <div className="bg-white border border-borde rounded-xl px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3 flex-wrap">
+      <div className="font-medium text-tinta w-full sm:w-40 sm:shrink-0">{curso.nombre}</div>
       <select
         value={dia}
         onChange={(e) => setDia(e.target.value)}

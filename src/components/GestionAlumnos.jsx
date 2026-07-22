@@ -184,7 +184,7 @@ function ImportarCSV({ cursos, onImportado }) {
   const conProblema = filas?.filter((f) => !f.valido || !f.cursoId).length || 0;
 
   return (
-    <div className="bg-white border border-borde rounded-2xl p-5 mb-6">
+    <div className="bg-white border border-borde rounded-2xl p-4 sm:p-5 mb-6">
       <div className="flex items-center gap-2 mb-2 text-tinta font-semibold">
         <Upload size={18} /> Importar alumnos desde CSV
       </div>
@@ -211,8 +211,8 @@ function ImportarCSV({ cursos, onImportado }) {
             {listosParaImportar} listos para importar
             {conProblema > 0 && `, ${conProblema} necesitan revisión (curso o datos incompletos)`}.
           </div>
-          <div className="max-h-80 overflow-y-auto border border-borde2 rounded-xl mb-4">
-            <table className="w-full text-sm">
+          <div className="max-h-80 overflow-y-auto overflow-x-auto border border-borde2 rounded-xl mb-4">
+            <table className="w-full text-sm min-w-[520px]">
               <thead className="bg-tiza sticky top-0">
                 <tr className="text-left text-texto2">
                   <th className="px-3 py-2 font-medium">Fila</th>

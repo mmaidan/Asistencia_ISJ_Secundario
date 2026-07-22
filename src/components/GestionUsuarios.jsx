@@ -1,13 +1,12 @@
 import { useEffect, useState } from "react";
 import { UserPlus, KeyRound, Trash2, Users } from "lucide-react";
 import { GRADOS } from "../lib/data";
-import { listarCursos } from "../lib/cursosApi";
 import {
   listarUsuarios,
   crearUsuario,
   actualizarGrados,
   actualizarGenero,
-  actualizarCursoPreceptor,
+  actualizarGradoPreceptor,
   resetearClave,
   eliminarUsuario,
 } from "../lib/usuariosApi";
@@ -21,16 +20,13 @@ const ROL_LABEL = {
 
 export default function GestionUsuarios({ miId }) {
   const [usuarios, setUsuarios] = useState([]);
-  const [cursos, setCursos] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
 
   async function recargar() {
     setCargando(true);
     try {
-      const [u, c] = await Promise.all([listarUsuarios(), listarCursos()]);
-      setUsuarios(u);
-      setCursos(c);
+      setUsuarios(await listarUsuarios());
     } catch (e) {
       setError("No se pudo cargar la lista de usuarios.");
     }
@@ -43,7 +39,7 @@ export default function GestionUsuarios({ miId }) {
 
   return (
     <div>
-      <NuevoUsuario cursos={cursos} onCreado={recargar} setError={setError} />
+      <NuevoUsuario onCreado={recargar} setError={setError} />
 
       {error && <div className="text-rojo text-sm mb-4">{error}</div>}
 
@@ -59,7 +55,6 @@ export default function GestionUsuarios({ miId }) {
             <FilaUsuario
               key={u.id}
               usuario={u}
-              cursos={cursos}
               esUno={u.id === miId}
               onCambio={recargar}
               setError={setError}
@@ -94,40 +89,36 @@ function SelectorGenero({ valor, onChange }) {
   );
 }
 
-function SelectorCurso({ cursos, valor, onChange }) {
-  const porGrado = {};
-  cursos.forEach((c) => {
-    if (!porGrado[c.grado]) porGrado[c.grado] = [];
-    porGrado[c.grado].push(c);
-  });
+// Selección de UN solo año (para el preceptor) — a diferencia del
+// selector de grados del profesor, acá elegir otro deselecciona el
+// anterior, porque un preceptor tiene un solo año a cargo.
+function SelectorGradoUnico({ valor, onChange }) {
   return (
-    <select
-      value={valor || ""}
-      onChange={(e) => onChange(e.target.value)}
-      className="w-full box-border border border-borde rounded-lg px-3 py-2.5 text-tinta"
-    >
-      <option value="">— Elegir curso —</option>
-      {Object.entries(porGrado).map(([grado, lista]) => (
-        <optgroup key={grado} label={`${grado}°`}>
-          {lista.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.division} — {c.genero}
-            </option>
-          ))}
-        </optgroup>
+    <div className="flex flex-wrap gap-2">
+      {GRADOS.map((g) => (
+        <button
+          type="button"
+          key={g}
+          onClick={() => onChange(g)}
+          className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
+            valor === g ? "bg-azul text-white border-azul" : "bg-transparent text-texto2 border-borde"
+          }`}
+        >
+          {g}°
+        </button>
       ))}
-    </select>
+    </div>
   );
 }
 
-function NuevoUsuario({ cursos, onCreado, setError }) {
+function NuevoUsuario({ onCreado, setError }) {
   const [nombre, setNombre] = useState("");
   const [usuario, setUsuario] = useState("");
   const [clave, setClave] = useState("");
   const [rol, setRol] = useState("profesor");
   const [grados, setGrados] = useState([]);
   const [genero, setGenero] = useState("");
-  const [cursoId, setCursoId] = useState("");
+  const [gradoPreceptor, setGradoPreceptor] = useState(null);
   const [guardando, setGuardando] = useState(false);
 
   function toggleGrado(g) {
@@ -145,19 +136,19 @@ function NuevoUsuario({ cursos, onCreado, setError }) {
       setError("Elegí si el profesor da clase a Varones o a Mujeres.");
       return;
     }
-    if (rol === "preceptor" && !cursoId) {
-      setError("Elegí qué curso tiene a cargo el preceptor.");
+    if (rol === "preceptor" && !gradoPreceptor) {
+      setError("Elegí qué año tiene a cargo el preceptor.");
       return;
     }
     setGuardando(true);
     try {
-      await crearUsuario({ usuario, clave, nombre, rol, grados, genero, cursoId });
+      await crearUsuario({ usuario, clave, nombre, rol, grados, genero, gradoPreceptor });
       setNombre("");
       setUsuario("");
       setClave("");
       setGrados([]);
       setGenero("");
-      setCursoId("");
+      setGradoPreceptor(null);
       onCreado();
     } catch (e) {
       setError(
@@ -170,11 +161,11 @@ function NuevoUsuario({ cursos, onCreado, setError }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white border border-borde rounded-2xl p-5 mb-6">
+    <form onSubmit={handleSubmit} className="bg-white border border-borde rounded-2xl p-4 sm:p-5 mb-6">
       <div className="flex items-center gap-2 mb-4 text-tinta font-semibold">
         <UserPlus size={18} /> Dar de alta un usuario
       </div>
-      <div className="grid sm:grid-cols-2 gap-3 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
         <div>
           <label className="block text-xs font-medium text-texto2 mb-1.5">Nombre y apellido</label>
           <input
@@ -247,8 +238,10 @@ function NuevoUsuario({ cursos, onCreado, setError }) {
 
       {rol === "preceptor" && (
         <div className="mb-4">
-          <label className="block text-xs font-medium text-texto2 mb-2">Curso a cargo</label>
-          <SelectorCurso cursos={cursos} valor={cursoId} onChange={setCursoId} />
+          <label className="block text-xs font-medium text-texto2 mb-2">
+            Año a cargo (ve todas las divisiones y ambos géneros de ese año)
+          </label>
+          <SelectorGradoUnico valor={gradoPreceptor} onChange={setGradoPreceptor} />
         </div>
       )}
 
@@ -262,7 +255,7 @@ function NuevoUsuario({ cursos, onCreado, setError }) {
       <button
         type="submit"
         disabled={guardando}
-        className="bg-bordo disabled:opacity-70 text-white font-semibold px-5 py-2.5 rounded-xl border-none text-sm cursor-pointer"
+        className="bg-bordo disabled:opacity-70 text-white font-semibold px-5 py-2.5 rounded-xl border-none text-sm cursor-pointer w-full sm:w-auto"
       >
         {guardando ? "Creando..." : "Crear usuario"}
       </button>
@@ -270,15 +263,13 @@ function NuevoUsuario({ cursos, onCreado, setError }) {
   );
 }
 
-function FilaUsuario({ usuario, cursos, esUno, onCambio, setError }) {
+function FilaUsuario({ usuario, esUno, onCambio, setError }) {
   const [grados, setGrados] = useState(usuario.grados || []);
   const [genero, setGenero] = useState(usuario.genero || "");
-  const [cursoId, setCursoId] = useState(usuario.curso_id || "");
+  const [gradoPreceptor, setGradoPreceptor] = useState(usuario.grados?.[0] || null);
   const [editandoClave, setEditandoClave] = useState(false);
   const [nuevaClave, setNuevaClave] = useState("");
   const [ocupado, setOcupado] = useState(false);
-
-  const cursoActual = cursos.find((c) => c.id === usuario.curso_id);
 
   function toggleGrado(g) {
     setGrados((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g].sort()));
@@ -307,14 +298,14 @@ function FilaUsuario({ usuario, cursos, esUno, onCambio, setError }) {
     setOcupado(false);
   }
 
-  async function cambiarCurso(nuevo) {
-    setCursoId(nuevo);
+  async function cambiarGradoPreceptor(nuevo) {
+    setGradoPreceptor(nuevo);
     setOcupado(true);
     try {
-      await actualizarCursoPreceptor(usuario.id, nuevo || null);
+      await actualizarGradoPreceptor(usuario.id, nuevo);
       onCambio();
     } catch (e) {
-      setError("No se pudo actualizar el curso a cargo.");
+      setError("No se pudo actualizar el año a cargo.");
     }
     setOcupado(false);
   }
@@ -345,7 +336,7 @@ function FilaUsuario({ usuario, cursos, esUno, onCambio, setError }) {
   }
 
   return (
-    <div className="bg-white border border-borde rounded-2xl px-5 py-4">
+    <div className="bg-white border border-borde rounded-2xl px-4 sm:px-5 py-4">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
         <div>
           <div className="font-semibold text-tinta">
@@ -354,7 +345,7 @@ function FilaUsuario({ usuario, cursos, esUno, onCambio, setError }) {
           <div className="text-xs text-texto2">
             @{usuario.usuario} · {ROL_LABEL[usuario.rol]}
             {usuario.rol === "profesor" && usuario.genero && ` · ${usuario.genero}`}
-            {usuario.rol === "preceptor" && cursoActual && ` · ${cursoActual.nombre}`}
+            {usuario.rol === "preceptor" && usuario.grados?.[0] && ` · ${usuario.grados[0]}° año`}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -377,7 +368,7 @@ function FilaUsuario({ usuario, cursos, esUno, onCambio, setError }) {
       </div>
 
       {editandoClave && (
-        <div className="flex items-center gap-2 mt-2 mb-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 mt-2 mb-3">
           <input
             value={nuevaClave}
             onChange={(e) => setNuevaClave(e.target.value)}
@@ -431,10 +422,8 @@ function FilaUsuario({ usuario, cursos, esUno, onCambio, setError }) {
 
       {usuario.rol === "preceptor" && (
         <div className="mt-2">
-          <div className="text-xs text-texto2 mb-1.5">Curso a cargo</div>
-          <div className="max-w-xs">
-            <SelectorCurso cursos={cursos} valor={cursoId} onChange={cambiarCurso} />
-          </div>
+          <div className="text-xs text-texto2 mb-1.5">Año a cargo</div>
+          <SelectorGradoUnico valor={gradoPreceptor} onChange={cambiarGradoPreceptor} />
         </div>
       )}
     </div>

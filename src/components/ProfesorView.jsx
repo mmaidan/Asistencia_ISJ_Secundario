@@ -113,7 +113,7 @@ function TomaDeAsistencia({ cursos, grados, genero, userId }) {
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
         <div>
           <label className="block text-xs font-medium text-texto2 mb-1.5">Curso</label>
           <select
@@ -179,11 +179,11 @@ function TomaDeAsistencia({ cursos, grados, genero, userId }) {
 
           <div className="bg-white border border-borde rounded-2xl divide-y divide-borde2 overflow-hidden mb-5">
             {alumnos.map((a) => (
-              <div key={a.id} className="flex items-center justify-between px-4 py-3">
-                <span className="text-tinta font-medium">
+              <div key={a.id} className="flex items-center justify-between gap-2 px-3 sm:px-4 py-3">
+                <span className="text-tinta font-medium text-sm sm:text-base truncate">
                   {a.apellido}, {a.nombre}
                 </span>
-                <div className="flex gap-1.5">
+                <div className="flex gap-1.5 shrink-0">
                   <EstadoBtn active={estados[a.id] === "presente"} onClick={() => setEstado(a.id, "presente")} colorClass="text-verde" bgClass="bg-verde-claro" borderClass="border-verde" icon={CheckCircle2} label="Presente" />
                   <EstadoBtn active={estados[a.id] === "tarde"} onClick={() => setEstado(a.id, "tarde")} colorClass="text-dorado" bgClass="bg-dorado-claro" borderClass="border-dorado" icon={Clock3} label="Tarde" />
                   <EstadoBtn active={estados[a.id] === "ausente"} onClick={() => setEstado(a.id, "ausente")} colorClass="text-rojo" bgClass="bg-rojo-claro" borderClass="border-rojo" icon={XCircle} label="Ausente" />

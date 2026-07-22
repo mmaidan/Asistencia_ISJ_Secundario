@@ -13,7 +13,7 @@ export default function Header({ rol, nombre, subtitulo, onSalir }) {
   const Icon = meta.icon;
 
   return (
-    <div className="flex items-center justify-between mb-8">
+    <div className="flex items-center justify-between mb-8 print:hidden">
       <div className="flex items-center gap-3">
         <img src={LOGO_B64} alt="Escudo del Instituto San José" className="w-8 h-auto" />
         <div>

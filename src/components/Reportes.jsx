@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { FileText, Download } from "lucide-react";
+import { FileText, Download, Printer } from "lucide-react";
 import { todayISO, formatFecha } from "../lib/data";
 import { listarCursos } from "../lib/cursosApi";
 import { fetchReporteCurso, armarResumenPorAlumno, descargarCSV } from "../lib/reportesApi";
@@ -76,18 +76,22 @@ export default function Reportes() {
     );
   }
 
+  function exportarPDF() {
+    window.print();
+  }
+
   if (!cursos) {
     return <div className="text-center py-12 text-texto2">Cargando cursos...</div>;
   }
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4 text-tinta font-semibold">
+      <div className="flex items-center gap-2 mb-4 text-tinta font-semibold print:hidden">
         <FileText size={18} /> Reporte de asistencia
       </div>
 
-      <div className="bg-white border border-borde rounded-2xl p-5 mb-6">
-        <div className="grid sm:grid-cols-3 gap-3 mb-4">
+      <div className="bg-white border border-borde rounded-2xl p-4 sm:p-5 mb-6 print:hidden">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
           <div>
             <label className="block text-xs font-medium text-texto2 mb-1.5">Curso</label>
             <select
@@ -128,23 +132,37 @@ export default function Reportes() {
         <button
           onClick={generar}
           disabled={cargando || !cursoId}
-          className="bg-bordo disabled:opacity-70 text-white font-semibold px-5 py-2.5 rounded-xl border-none text-sm cursor-pointer"
+          className="bg-bordo disabled:opacity-70 text-white font-semibold px-5 py-2.5 rounded-xl border-none text-sm cursor-pointer w-full sm:w-auto"
         >
           {cargando ? "Generando..." : "Generar reporte"}
         </button>
       </div>
 
-      {error && <div className="text-rojo text-sm mb-4">{error}</div>}
+      {error && <div className="text-rojo text-sm mb-4 print:hidden">{error}</div>}
 
       {filas && (
         <div>
-          <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          {/* Encabezado que solo se ve al imprimir / exportar a PDF */}
+          <div className="hidden print:block mb-4">
+            <div className="text-lg font-semibold">Instituto San José — Reporte de Asistencia</div>
+            <div className="text-sm text-texto2">
+              {curso?.nombre} · {formatFecha(desde)} a {formatFecha(hasta)}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mb-3 flex-wrap gap-2 print:hidden">
             <div className="text-sm text-texto2">
               {curso?.nombre} · {formatFecha(desde)} a {formatFecha(hasta)} · {filas.length} marcas
               registradas
             </div>
             {filas.length > 0 && (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={exportarPDF}
+                  className="flex items-center gap-1.5 text-xs font-medium text-white bg-bordo px-3 py-1.5 rounded-full border-none cursor-pointer"
+                >
+                  <Printer size={13} /> Exportar PDF
+                </button>
                 <button
                   onClick={descargarResumen}
                   className="flex items-center gap-1.5 text-xs font-medium text-azul bg-azul-claro px-3 py-1.5 rounded-full border-none cursor-pointer"
@@ -166,8 +184,8 @@ export default function Reportes() {
               No hay asistencia registrada en ese rango para este curso.
             </div>
           ) : (
-            <div className="bg-white border border-borde rounded-2xl overflow-hidden">
-              <table className="w-full text-sm">
+            <div className="bg-white border border-borde rounded-2xl overflow-x-auto">
+              <table className="w-full text-sm min-w-[480px]">
                 <thead className="bg-tiza">
                   <tr className="text-left text-texto2">
                     <th className="px-4 py-2.5 font-medium">Alumno</th>
@@ -180,7 +198,7 @@ export default function Reportes() {
                 <tbody>
                   {resumen.map((r) => (
                     <tr key={r.alumnoId} className="border-t border-borde2">
-                      <td className="px-4 py-2.5 text-tinta">
+                      <td className="px-4 py-2.5 text-tinta whitespace-nowrap">
                         {r.apellido}, {r.nombre}
                       </td>
                       <td className="px-4 py-2.5 text-center text-verde font-medium">{r.presente}</td>
