@@ -12,12 +12,14 @@ import GestionUsuarios from "./components/GestionUsuarios";
 import GestionCursos from "./components/GestionCursos";
 import GestionAlumnos from "./components/GestionAlumnos";
 import Reportes from "./components/Reportes";
+import CambiarMiClave from "./components/CambiarMiClave";
 import { TabBtn } from "./components/AttendanceUI";
 
 export default function App() {
   const [sesion, setSesion] = useState(null);
   const [listo, setListo] = useState(false);
   const [tab, setTab] = useState("hoy");
+  const [mostrarCambioClave, setMostrarCambioClave] = useState(false);
 
   useEffect(() => {
     setSesion(getSesion());
@@ -47,7 +49,16 @@ export default function App() {
           nombre={sesion.nombre}
           subtitulo={gradoPreceptor ? `${gradoPreceptor}° año` : null}
           onSalir={salir}
+          onCambiarClave={
+            sesion.rol === "profesor" || sesion.rol === "preceptor"
+              ? () => setMostrarCambioClave(true)
+              : null
+          }
         />
+
+        {mostrarCambioClave && (
+          <CambiarMiClave usuarioId={sesion.id} onCerrar={() => setMostrarCambioClave(false)} />
+        )}
 
         {sesion.rol === "profesor" && (
           <ProfesorView grados={sesion.grados} genero={sesion.genero} userId={sesion.id} />
