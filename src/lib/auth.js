@@ -59,3 +59,24 @@ export function getSesion() {
 export function cerrarSesion() {
   localStorage.removeItem(SESION_KEY);
 }
+
+export async function cambiarMiClave(usuarioId, claveActual, claveNueva) {
+  const hashActual = await hashClave(claveActual);
+  const { data, error } = await supabase
+    .from("usuarios")
+    .select("id")
+    .eq("id", usuarioId)
+    .eq("clave_hash", hashActual)
+    .maybeSingle();
+
+  if (error || !data) {
+    throw new Error("clave_incorrecta");
+  }
+
+  const hashNuevo = await hashClave(claveNueva);
+  const { error: errorUpdate } = await supabase
+    .from("usuarios")
+    .update({ clave_hash: hashNuevo })
+    .eq("id", usuarioId);
+  if (errorUpdate) throw errorUpdate;
+}
