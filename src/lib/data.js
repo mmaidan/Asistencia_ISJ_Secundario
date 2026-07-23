@@ -7,9 +7,32 @@ export function nombreCurso(curso) {
   return `${curso.grado}° ${curso.division} — ${curso.genero}`;
 }
 
+// Un curso puede tener clase una o dos veces por semana (dia/horario y,
+// opcionalmente, dia2/horario2). Estas funciones tratan ambas sesiones.
+
+export function sesionesCurso(curso) {
+  const sesiones = [];
+  if (curso.dia && curso.horario) sesiones.push({ dia: curso.dia, horario: curso.horario });
+  if (curso.dia2 && curso.horario2) sesiones.push({ dia: curso.dia2, horario: curso.horario2 });
+  return sesiones;
+}
+
+export function formatHorariosCurso(curso) {
+  return sesionesCurso(curso)
+    .map((s) => `${s.dia} ${s.horario}`)
+    .join(" · ");
+}
+
 export function diaDeHoyEs(dia) {
   const hoy = new Date().toLocaleDateString("es-AR", { weekday: "long" });
   return hoy.toLowerCase() === dia.toLowerCase();
+}
+
+// Si hoy toca alguna de las sesiones semanales de este curso, devuelve su
+// horario (para saber si ya pasó). Si hoy no le toca clase, devuelve null.
+export function horarioDeHoy(curso) {
+  const sesionHoy = sesionesCurso(curso).find((s) => diaDeHoyEs(s.dia));
+  return sesionHoy ? sesionHoy.horario : null;
 }
 
 export function horarioYaPaso(horario) {

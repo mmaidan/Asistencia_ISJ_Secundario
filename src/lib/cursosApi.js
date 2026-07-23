@@ -11,7 +11,10 @@ export async function listarCursos() {
   return data;
 }
 
-export async function actualizarHorarioCurso(id, { dia, horario }) {
-  const { error } = await supabase.from("cursos").update({ dia, horario }).eq("id", id);
+export async function actualizarHorarioCurso(id, { dia, horario, dia2, horario2 }) {
+  const { error } = await supabase
+    .from("cursos")
+    .update({ dia, horario, dia2: dia2 || null, horario2: horario2 || null })
+    .eq("id", id);
   if (error) throw error;
 }
