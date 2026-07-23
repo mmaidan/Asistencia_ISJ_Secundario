@@ -106,6 +106,7 @@ function SelectorGenero({ valor, onChange }) {
   const opciones = [
     { valor: "Varones", label: "Varones" },
     { valor: "Mujeres", label: "Mujeres" },
+    { valor: "AMBOS", label: "Ambos" },
   ];
   return (
     <div className="flex gap-2">
@@ -169,7 +170,7 @@ function NuevoUsuario({ onCreado, setError }) {
       return;
     }
     if (rol === "profesor" && !genero) {
-      setError("Elegí si el profesor da clase a Varones o a Mujeres.");
+      setError("Elegí si el profesor da clase a Varones, Mujeres, o Ambos.");
       return;
     }
     if (rol === "preceptor" && !gradoPreceptor) {
@@ -178,7 +179,15 @@ function NuevoUsuario({ onCreado, setError }) {
     }
     setGuardando(true);
     try {
-      await crearUsuario({ usuario, clave, nombre, rol, grados, genero, gradoPreceptor });
+      await crearUsuario({
+        usuario,
+        clave,
+        nombre,
+        rol,
+        grados,
+        genero: genero === "AMBOS" ? null : genero,
+        gradoPreceptor,
+      });
       setNombre("");
       setUsuario("");
       setClave("");
@@ -247,7 +256,9 @@ function NuevoUsuario({ onCreado, setError }) {
         <>
           <div className="mb-4">
             <label className="block text-xs font-medium text-texto2 mb-2">
-              ¿A quién le da clase? (nunca tienen clase juntos)
+              ¿A quién le da clase? (los cursos de varones y mujeres son
+              siempre distintos; "Ambos" es para el mismo profe a cargo de
+              los dos)
             </label>
             <SelectorGenero valor={genero} onChange={setGenero} />
           </div>
@@ -301,7 +312,7 @@ function NuevoUsuario({ onCreado, setError }) {
 
 function FilaUsuario({ usuario, esUno, onCambio, setError }) {
   const [grados, setGrados] = useState(usuario.grados || []);
-  const [genero, setGenero] = useState(usuario.genero || "");
+  const [genero, setGenero] = useState(usuario.genero || "AMBOS");
   const [gradoPreceptor, setGradoPreceptor] = useState(usuario.grados?.[0] || null);
   const [editandoClave, setEditandoClave] = useState(false);
   const [nuevaClave, setNuevaClave] = useState("");
@@ -328,7 +339,7 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
     setGenero(nuevo);
     setOcupado(true);
     try {
-      await actualizarGenero(usuario.id, nuevo);
+      await actualizarGenero(usuario.id, nuevo === "AMBOS" ? null : nuevo);
       onCambio();
     } catch (e) {
       setError("No se pudo actualizar a quién le da clase.");
@@ -395,7 +406,7 @@ function FilaUsuario({ usuario, esUno, onCambio, setError }) {
           </div>
           <div className="text-xs text-texto2">
             @{usuario.usuario} · {ROL_LABEL[usuario.rol]}
-            {usuario.rol === "profesor" && usuario.genero && ` · ${usuario.genero}`}
+            {usuario.rol === "profesor" && ` · ${usuario.genero || "Ambos"}`}
             {usuario.rol === "preceptor" && usuario.grados?.[0] && ` · ${usuario.grados[0]}° año`}
           </div>
         </div>
