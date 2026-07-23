@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { todayISO, formatFecha, nombreCurso } from "../lib/data";
+import { todayISO, formatFecha } from "../lib/data";
 import { listarCursos } from "../lib/cursosApi";
 import AsistenciaEditor from "./AsistenciaEditor";
 
@@ -25,6 +25,8 @@ export default function ProfesorView({ grados, genero, userId }) {
 }
 
 function SelectorYEditor({ cursos, grados, genero, userId }) {
+  // El profe elige el AÑO (no la división puntual): se le trae de una
+  // vez a los alumnos de A y B juntos, distinguidos en la vista.
   const cursosDisponibles = useMemo(
     () =>
       cursos.filter(
@@ -32,19 +34,16 @@ function SelectorYEditor({ cursos, grados, genero, userId }) {
       ),
     [cursos, grados, genero]
   );
-  const cursosPorGrado = useMemo(() => {
-    const map = {};
-    cursosDisponibles.forEach((c) => {
-      if (!map[c.grado]) map[c.grado] = [];
-      map[c.grado].push(c);
-    });
-    return map;
+
+  const aniosDisponibles = useMemo(() => {
+    const set = new Set(cursosDisponibles.map((c) => c.grado));
+    return Array.from(set).sort((a, b) => a - b);
   }, [cursosDisponibles]);
 
-  const [cursoId, setCursoId] = useState(cursosDisponibles[0]?.id);
+  const [grado, setGrado] = useState(aniosDisponibles[0]);
   const [fecha, setFecha] = useState(todayISO());
 
-  if (!cursoId || cursosDisponibles.length === 0) {
+  if (!grado || aniosDisponibles.length === 0) {
     return (
       <div className="text-center py-16 text-texto2">
         No tenés cursos asignados todavía. Pedile al rector que te los asigne.
@@ -52,26 +51,22 @@ function SelectorYEditor({ cursos, grados, genero, userId }) {
     );
   }
 
-  const curso = cursosDisponibles.find((c) => c.id === cursoId);
+  const cursosDelAnio = cursosDisponibles.filter((c) => c.grado === grado);
 
   return (
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
         <div>
-          <label className="block text-xs font-medium text-texto2 mb-1.5">Curso</label>
+          <label className="block text-xs font-medium text-texto2 mb-1.5">Año</label>
           <select
-            value={cursoId}
-            onChange={(e) => setCursoId(e.target.value)}
+            value={grado}
+            onChange={(e) => setGrado(Number(e.target.value))}
             className="w-full box-border border border-borde rounded-lg px-3 py-2.5 bg-white text-tinta font-medium"
           >
-            {Object.entries(cursosPorGrado).map(([grado, lista]) => (
-              <optgroup key={grado} label={`${grado}°`}>
-                {lista.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.division} — {c.genero} · {c.dia} {c.horario}
-                  </option>
-                ))}
-              </optgroup>
+            {aniosDisponibles.map((g) => (
+              <option key={g} value={g}>
+                {g}° año
+              </option>
             ))}
           </select>
         </div>
@@ -87,11 +82,11 @@ function SelectorYEditor({ cursos, grados, genero, userId }) {
       </div>
 
       <div className="font-display text-2xl text-azul leading-tight mb-1">
-        {nombreCurso(curso)} — {formatFecha(fecha)}
+        {grado}° año — {formatFecha(fecha)}
       </div>
       <div className="mb-4" />
 
-      <AsistenciaEditor cursoId={cursoId} fecha={fecha} userId={userId} />
+      <AsistenciaEditor cursos={cursosDelAnio} fecha={fecha} userId={userId} />
     </div>
   );
 }

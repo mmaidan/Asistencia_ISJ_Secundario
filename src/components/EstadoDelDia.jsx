@@ -110,7 +110,7 @@ export default function EstadoDelDia({ userId }) {
                     />
                     {abierto && (
                       <div className="bg-tiza border border-t-0 border-borde rounded-b-2xl -mt-2 pt-4 px-4 sm:px-5 pb-5">
-                        <AsistenciaEditor cursoId={curso.id} fecha={fecha} userId={userId} />
+                        <AsistenciaEditor cursos={[curso]} fecha={fecha} userId={userId} />
                       </div>
                     )}
                   </div>
