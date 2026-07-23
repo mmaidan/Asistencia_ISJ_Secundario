@@ -61,7 +61,7 @@ export default function App() {
         )}
 
         {sesion.rol === "profesor" && (
-          <ProfesorView grados={sesion.grados} genero={sesion.genero} userId={sesion.id} />
+          <ProfesorTabs grados={sesion.grados} genero={sesion.genero} userId={sesion.id} />
         )}
 
         {sesion.rol === "preceptor" && <PreceptorView grado={gradoPreceptor} />}
@@ -93,7 +93,7 @@ export default function App() {
             </div>
 
             {tab === "hoy" && <EstadoDelDia userId={sesion.id} />}
-            {tab === "stats" && <Estadisticas />}
+            {tab === "stats" && <Estadisticas esSuperusuario />}
             {tab === "alertas" && <Alertas />}
             {tab === "reportes" && <Reportes />}
             {tab === "cursos" && <GestionCursos />}
@@ -106,6 +106,24 @@ export default function App() {
           Desarrollado por Prof. Maidán Marcos Exequiel
         </div>
       </div>
+    </div>
+  );
+}
+
+function ProfesorTabs({ grados, genero, userId }) {
+  const [tab, setTab] = useState("asistencia");
+  return (
+    <div>
+      <div className="flex gap-1.5 mb-6 bg-white border border-borde rounded-xl p-1 w-fit flex-wrap print:hidden">
+        <TabBtn active={tab === "asistencia"} onClick={() => setTab("asistencia")} icon={Calendar}>
+          Asistencia
+        </TabBtn>
+        <TabBtn active={tab === "stats"} onClick={() => setTab("stats")} icon={BarChart3}>
+          Estadísticas
+        </TabBtn>
+      </div>
+      {tab === "asistencia" && <ProfesorView grados={grados} genero={genero} userId={userId} />}
+      {tab === "stats" && <Estadisticas grados={grados} genero={genero} />}
     </div>
   );
 }
