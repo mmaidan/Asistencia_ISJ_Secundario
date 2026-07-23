@@ -4,7 +4,6 @@ import { todayISO, formatFecha, diaDeHoyEs, horarioYaPaso } from "../lib/data";
 import { listarCursos } from "../lib/cursosApi";
 import { listarTodosLosAlumnos } from "../lib/alumnosApi";
 import { fetchAsistenciasDelDia } from "../lib/asistenciasApi";
-import { CursoEstadoCard } from "./AttendanceUI";
 import AsistenciaEditor from "./AsistenciaEditor";
 
 export default function EstadoDelDia({ userId }) {
@@ -13,7 +12,7 @@ export default function EstadoDelDia({ userId }) {
   const [alumnos, setAlumnos] = useState([]);
   const [porCurso, setPorCurso] = useState({});
   const [cargando, setCargando] = useState(true);
-  const [cursoAbierto, setCursoAbierto] = useState(null);
+  const [grupoAbierto, setGrupoAbierto] = useState(null);
 
   useEffect(() => {
     Promise.all([listarCursos(), listarTodosLosAlumnos()]).then(([c, a]) => {
@@ -52,15 +51,24 @@ export default function EstadoDelDia({ userId }) {
     );
   }, [cursos, porCurso, esHoy]);
 
+  // Agrupamos por año + género: cada grupo junta las divisiones A y B,
+  // igual que ahora ve el profesor al tomar asistencia.
   const porGrado = useMemo(() => {
     if (!cursos) return {};
-    const map = {};
+    const gruposPorGenero = {};
     cursos.forEach((c) => {
-      if (!map[c.grado]) map[c.grado] = [];
-      map[c.grado].push({ curso: c, reg: porCurso[c.id] || null, total: totalPorCurso[c.id] || 0 });
+      const clave = `${c.grado}-${c.genero}`;
+      if (!gruposPorGenero[clave]) gruposPorGenero[clave] = { grado: c.grado, genero: c.genero, cursos: [] };
+      gruposPorGenero[clave].cursos.push(c);
     });
+    const map = {};
+    Object.values(gruposPorGenero).forEach((g) => {
+      if (!map[g.grado]) map[g.grado] = [];
+      map[g.grado].push(g);
+    });
+    Object.values(map).forEach((lista) => lista.sort((a, b) => a.genero.localeCompare(b.genero)));
     return map;
-  }, [cursos, porCurso, totalPorCurso]);
+  }, [cursos]);
 
   return (
     <div>
@@ -92,25 +100,26 @@ export default function EstadoDelDia({ userId }) {
       {!cursos || cargando ? (
         <div className="text-center py-12 text-texto2">Cargando...</div>
       ) : (
-        Object.entries(porGrado).map(([grado, items]) => (
+        Object.entries(porGrado).map(([grado, grupos]) => (
           <div key={grado} className="mb-6">
             <div className="font-display text-xl text-azul mb-2 tracking-wide">{grado}° año</div>
             <div className="grid gap-3">
-              {items.map(({ curso, reg, total }) => {
-                const abierto = cursoAbierto === curso.id;
+              {grupos.map((grupo) => {
+                const claveGrupo = `${grupo.grado}-${grupo.genero}`;
+                const abierto = grupoAbierto === claveGrupo;
                 return (
-                  <div key={curso.id}>
-                    <CursoEstadoCard
-                      curso={curso}
-                      reg={reg}
-                      total={total}
-                      atrasado={atrasados.some((c) => c.id === curso.id)}
+                  <div key={claveGrupo}>
+                    <GrupoEstadoCard
+                      grupo={grupo}
+                      porCurso={porCurso}
+                      totalPorCurso={totalPorCurso}
+                      atrasados={atrasados}
                       abierto={abierto}
-                      onClick={() => setCursoAbierto(abierto ? null : curso.id)}
+                      onClick={() => setGrupoAbierto(abierto ? null : claveGrupo)}
                     />
                     {abierto && (
                       <div className="bg-tiza border border-t-0 border-borde rounded-b-2xl -mt-2 pt-4 px-4 sm:px-5 pb-5">
-                        <AsistenciaEditor cursos={[curso]} fecha={fecha} userId={userId} />
+                        <AsistenciaEditor cursos={grupo.cursos} fecha={fecha} userId={userId} />
                       </div>
                     )}
                   </div>
@@ -119,6 +128,76 @@ export default function EstadoDelDia({ userId }) {
             </div>
           </div>
         ))
+      )}
+    </div>
+  );
+}
+
+function GrupoEstadoCard({ grupo, porCurso, totalPorCurso, atrasados, abierto, onClick }) {
+  const { cursos, grado, genero } = grupo;
+  const tomadas = cursos.filter((c) => porCurso[c.id]).length;
+  const todasTomadas = tomadas === cursos.length;
+  const ningunaTomada = tomadas === 0;
+  const algunaAtrasada = cursos.some((c) => atrasados.some((a) => a.id === c.id));
+  const total = cursos.reduce((acc, c) => acc + (totalPorCurso[c.id] || 0), 0);
+
+  let ausentes = 0;
+  let tarde = 0;
+  cursos.forEach((c) => {
+    const reg = porCurso[c.id];
+    if (reg) {
+      Object.values(reg.estados).forEach((e) => {
+        if (e === "ausente") ausentes++;
+        if (e === "tarde") tarde++;
+      });
+    }
+  });
+
+  return (
+    <div
+      className={`bg-white border rounded-2xl px-4 sm:px-5 py-4 cursor-pointer ${
+        algunaAtrasada && !todasTomadas ? "border-rojo-claro" : "border-borde"
+      }`}
+      onClick={onClick}
+    >
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <div className="font-semibold text-tinta">
+            {grado}° año — {genero}
+          </div>
+          <div className="text-xs text-texto2">
+            {cursos.map((c) => `${c.dia} ${c.horario} (${c.division})`).join(" · ")}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {todasTomadas ? (
+            <span className="text-sm font-medium text-verde bg-verde-claro px-3 py-1 rounded-full">
+              Tomada
+            </span>
+          ) : ningunaTomada ? (
+            <span
+              className={`text-sm font-medium px-3 py-1 rounded-full ${
+                algunaAtrasada ? "text-rojo bg-rojo-claro" : "text-dorado bg-dorado-claro"
+              }`}
+            >
+              {algunaAtrasada ? "Atrasada" : "Sin registrar"}
+            </span>
+          ) : (
+            <span className="text-sm font-medium text-dorado bg-dorado-claro px-3 py-1 rounded-full">
+              Parcial ({tomadas}/{cursos.length})
+            </span>
+          )}
+          <span className="text-xs text-azul font-medium">{abierto ? "Cerrar" : "Ver / editar"}</span>
+        </div>
+      </div>
+      {tomadas > 0 && (
+        <div className="flex gap-4 mt-3 text-sm font-mono">
+          <span className="text-texto2">
+            <span className="text-tinta font-semibold">{total - ausentes}</span>/{total} presentes
+          </span>
+          {ausentes > 0 && <span className="text-rojo font-semibold">{ausentes} ausentes</span>}
+          {tarde > 0 && <span className="text-dorado font-semibold">{tarde} tarde</span>}
+        </div>
       )}
     </div>
   );
