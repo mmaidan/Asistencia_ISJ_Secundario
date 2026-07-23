@@ -87,7 +87,7 @@ export default function App() {
             {tab === "reportes" && <Reportes />}
             {tab === "cursos" && <GestionCursos />}
             {tab === "alumnos" && <GestionAlumnos />}
-            {tab === "usuarios" && <GestionUsuarios miId={sesion.id} />}
+            {tab === "usuarios" && <GestionUsuarios miId={sesion.id} miUsuario={sesion.usuario} />}
           </>
         )}
 
