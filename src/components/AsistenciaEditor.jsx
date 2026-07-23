@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Clock3, XCircle, FileText } from "lucide-react";
+import { formatHorariosCurso } from "../lib/data";
 import { listarAlumnosPorCurso } from "../lib/alumnosApi";
 import { fetchAsistenciaCurso, guardarAsistencia } from "../lib/asistenciasApi";
 import { fetchJustificativosClase, guardarJustificativo, borrarJustificativo } from "../lib/justificativosApi";
@@ -160,12 +161,15 @@ export default function AsistenciaEditor({ cursos, fecha, userId }) {
         if (listaAlumnos.length === 0) return null;
         return (
           <div key={curso.id} className="mb-5">
-            <div className="flex items-center justify-between mb-2 px-1">
-              <div className="text-sm font-semibold text-tinta">
-                División {curso.division}
-                {cursos.length > 2 || cursos.some((c) => c.genero !== cursos[0].genero)
-                  ? ` — ${curso.genero}`
-                  : ""}
+            <div className="flex items-center justify-between mb-2 px-1 gap-2 flex-wrap">
+              <div>
+                <div className="text-sm font-semibold text-tinta">
+                  División {curso.division}
+                  {cursos.length > 2 || cursos.some((c) => c.genero !== cursos[0].genero)
+                    ? ` — ${curso.genero}`
+                    : ""}
+                </div>
+                <div className="text-xs text-texto3">{formatHorariosCurso(curso)}</div>
               </div>
               {reg ? (
                 <span className="text-xs text-verde bg-verde-claro px-2 py-0.5 rounded-full font-medium">

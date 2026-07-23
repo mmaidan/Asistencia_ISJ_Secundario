@@ -28,9 +28,12 @@ export default function GestionCursos() {
 
   return (
     <div>
-      <div className="flex items-center gap-2 mb-4 text-tinta font-semibold">
+      <div className="flex items-center gap-2 mb-1 text-tinta font-semibold">
         <CalendarClock size={18} /> Día y horario de cada curso
       </div>
+      <p className="text-sm text-texto2 mb-4">
+        Cada curso puede tener clase una o dos veces por semana. La segunda clase es opcional.
+      </p>
       <div className="grid gap-6">
         {Object.entries(porGrado).map(([grado, lista]) => (
           <div key={grado}>
@@ -47,17 +50,30 @@ export default function GestionCursos() {
   );
 }
 
+const SIN_SEGUNDA = "";
+
 function FilaCurso({ curso, onGuardado }) {
   const [dia, setDia] = useState(curso.dia);
   const [horario, setHorario] = useState(curso.horario);
+  const [dia2, setDia2] = useState(curso.dia2 || SIN_SEGUNDA);
+  const [horario2, setHorario2] = useState(curso.horario2 || "");
   const [guardando, setGuardando] = useState(false);
 
-  const cambio = dia !== curso.dia || horario !== curso.horario;
+  const cambio =
+    dia !== curso.dia ||
+    horario !== curso.horario ||
+    dia2 !== (curso.dia2 || SIN_SEGUNDA) ||
+    horario2 !== (curso.horario2 || "");
 
   async function guardar() {
     setGuardando(true);
     try {
-      await actualizarHorarioCurso(curso.id, { dia, horario });
+      await actualizarHorarioCurso(curso.id, {
+        dia,
+        horario,
+        dia2: dia2 === SIN_SEGUNDA ? null : dia2,
+        horario2: dia2 === SIN_SEGUNDA ? null : horario2,
+      });
       onGuardado();
     } catch (e) {
       // silencioso: si falla, el botón "Guardar" simplemente sigue visible
@@ -66,34 +82,61 @@ function FilaCurso({ curso, onGuardado }) {
   }
 
   return (
-    <div className="bg-white border border-borde rounded-xl px-3 sm:px-4 py-3 flex items-center gap-2 sm:gap-3 flex-wrap">
-      <div className="font-medium text-tinta w-full sm:w-40 sm:shrink-0">{curso.nombre}</div>
-      <select
-        value={dia}
-        onChange={(e) => setDia(e.target.value)}
-        className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta"
-      >
-        {DIAS.map((d) => (
-          <option key={d} value={d}>
-            {d}
-          </option>
-        ))}
-      </select>
-      <input
-        value={horario}
-        onChange={(e) => setHorario(e.target.value)}
-        placeholder="14:00 a 15:20"
-        className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta flex-1 min-w-[140px]"
-      />
-      {cambio && (
-        <button
-          onClick={guardar}
-          disabled={guardando}
-          className="text-xs font-medium text-white bg-verde px-3 py-1.5 rounded-full border-none cursor-pointer"
+    <div className="bg-white border border-borde rounded-xl px-3 sm:px-4 py-3">
+      <div className="font-medium text-tinta mb-2">{curso.nombre}</div>
+
+      <div className="flex items-center gap-2 flex-wrap mb-2">
+        <span className="text-xs text-texto3 w-full sm:w-20 sm:shrink-0">1ª clase</span>
+        <select
+          value={dia}
+          onChange={(e) => setDia(e.target.value)}
+          className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta"
         >
-          {guardando ? "Guardando..." : "Guardar"}
-        </button>
-      )}
+          {DIAS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+        <input
+          value={horario}
+          onChange={(e) => setHorario(e.target.value)}
+          placeholder="14:00 a 15:20"
+          className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta flex-1 min-w-[140px]"
+        />
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-texto3 w-full sm:w-20 sm:shrink-0">2ª clase</span>
+        <select
+          value={dia2}
+          onChange={(e) => setDia2(e.target.value)}
+          className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta"
+        >
+          <option value={SIN_SEGUNDA}>Sin segunda clase</option>
+          {DIAS.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+        <input
+          value={horario2}
+          onChange={(e) => setHorario2(e.target.value)}
+          placeholder="14:00 a 15:20"
+          disabled={dia2 === SIN_SEGUNDA}
+          className="border border-borde rounded-lg px-2.5 py-1.5 text-sm text-tinta flex-1 min-w-[140px] disabled:opacity-50 disabled:bg-tiza"
+        />
+        {cambio && (
+          <button
+            onClick={guardar}
+            disabled={guardando}
+            className="text-xs font-medium text-white bg-verde px-3 py-1.5 rounded-full border-none cursor-pointer ml-auto"
+          >
+            {guardando ? "Guardando..." : "Guardar"}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

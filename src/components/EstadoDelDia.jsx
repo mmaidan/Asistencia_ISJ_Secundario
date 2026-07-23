@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle } from "lucide-react";
-import { todayISO, formatFecha, diaDeHoyEs, horarioYaPaso } from "../lib/data";
+import { todayISO, formatFecha, horarioDeHoy, horarioYaPaso, formatHorariosCurso } from "../lib/data";
 import { listarCursos } from "../lib/cursosApi";
 import { listarTodosLosAlumnos } from "../lib/alumnosApi";
 import { fetchAsistenciasDelDia } from "../lib/asistenciasApi";
@@ -46,9 +46,10 @@ export default function EstadoDelDia({ userId }) {
 
   const atrasados = useMemo(() => {
     if (!cursos || !esHoy) return [];
-    return cursos.filter(
-      (c) => diaDeHoyEs(c.dia) && horarioYaPaso(c.horario) && !porCurso[c.id]
-    );
+    return cursos.filter((c) => {
+      const horarioHoy = horarioDeHoy(c);
+      return horarioHoy && horarioYaPaso(horarioHoy) && !porCurso[c.id];
+    });
   }, [cursos, porCurso, esHoy]);
 
   // Agrupamos por año + género: cada grupo junta las divisiones A y B,
@@ -166,7 +167,7 @@ function GrupoEstadoCard({ grupo, porCurso, totalPorCurso, atrasados, abierto, o
             {grado}° año — {genero}
           </div>
           <div className="text-xs text-texto2">
-            {cursos.map((c) => `${c.dia} ${c.horario} (${c.division})`).join(" · ")}
+            {cursos.map((c) => `${formatHorariosCurso(c)} (${c.division})`).join(" · ")}
           </div>
         </div>
         <div className="flex items-center gap-2">
