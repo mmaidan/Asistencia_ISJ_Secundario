@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, Copy } from "lucide-react";
 import { DIAS } from "../lib/data";
 import { listarCursos, actualizarHorarioCurso } from "../lib/cursosApi";
 
@@ -32,7 +32,9 @@ export default function GestionCursos() {
         <CalendarClock size={18} /> Día y horario de cada curso
       </div>
       <p className="text-sm text-texto2 mb-4">
-        Cada curso puede tener clase una o dos veces por semana. La segunda clase es opcional.
+        Cada curso puede tener clase una o dos veces por semana. La segunda clase es opcional. Si
+        A y B tienen el mismo horario, cargalo en uno y usá "Copiar a B" (o "a A") para no
+        repetirlo.
       </p>
       <div className="grid gap-6">
         {Object.entries(porGrado).map(([grado, lista]) => (
@@ -40,7 +42,14 @@ export default function GestionCursos() {
             <div className="font-display text-xl text-azul mb-2 tracking-wide">{grado}° año</div>
             <div className="grid gap-2">
               {lista.map((c) => (
-                <FilaCurso key={c.id} curso={c} onGuardado={recargar} />
+                <FilaCurso
+                  key={c.id}
+                  curso={c}
+                  pareja={cursos.find(
+                    (o) => o.grado === c.grado && o.genero === c.genero && o.division !== c.division
+                  )}
+                  onGuardado={recargar}
+                />
               ))}
             </div>
           </div>
@@ -52,7 +61,7 @@ export default function GestionCursos() {
 
 const SIN_SEGUNDA = "";
 
-function FilaCurso({ curso, onGuardado }) {
+function FilaCurso({ curso, pareja, onGuardado }) {
   const [dia, setDia] = useState(curso.dia);
   const [horario, setHorario] = useState(curso.horario);
   const [dia2, setDia2] = useState(curso.dia2 || SIN_SEGUNDA);
@@ -81,9 +90,41 @@ function FilaCurso({ curso, onGuardado }) {
     setGuardando(false);
   }
 
+  async function copiarAPareja() {
+    if (!pareja) return;
+    setGuardando(true);
+    try {
+      const datos = {
+        dia,
+        horario,
+        dia2: dia2 === SIN_SEGUNDA ? null : dia2,
+        horario2: dia2 === SIN_SEGUNDA ? null : horario2,
+      };
+      // Si había cambios sin guardar en este curso, los guardamos también,
+      // así las dos divisiones quedan exactamente iguales.
+      await Promise.all([actualizarHorarioCurso(curso.id, datos), actualizarHorarioCurso(pareja.id, datos)]);
+      onGuardado();
+    } catch (e) {
+      // silencioso
+    }
+    setGuardando(false);
+  }
+
   return (
     <div className="bg-white border border-borde rounded-xl px-3 sm:px-4 py-3">
-      <div className="font-medium text-tinta mb-2">{curso.nombre}</div>
+      <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
+        <div className="font-medium text-tinta">{curso.nombre}</div>
+        {pareja && (
+          <button
+            onClick={copiarAPareja}
+            disabled={guardando}
+            title={`Copiar este horario a la división ${pareja.division}`}
+            className="flex items-center gap-1 text-xs font-medium text-azul bg-azul-claro px-2.5 py-1 rounded-full border-none cursor-pointer"
+          >
+            <Copy size={12} /> Copiar a {pareja.division}
+          </button>
+        )}
+      </div>
 
       <div className="flex items-center gap-2 flex-wrap mb-2">
         <span className="text-xs text-texto3 w-full sm:w-20 sm:shrink-0">1ª clase</span>
