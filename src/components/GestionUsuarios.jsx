@@ -19,7 +19,7 @@ const ROL_LABEL = {
   rector: "Rector",
 };
 
-export default function GestionUsuarios({ miId }) {
+export default function GestionUsuarios({ miId, miUsuario }) {
   const [usuarios, setUsuarios] = useState([]);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -28,7 +28,10 @@ export default function GestionUsuarios({ miId }) {
   async function recargar() {
     setCargando(true);
     try {
-      setUsuarios(await listarUsuarios());
+      const todos = await listarUsuarios();
+      const visibles =
+        miUsuario === "admin" ? todos : todos.filter((u) => u.usuario !== "admin");
+      setUsuarios(visibles);
     } catch (e) {
       setError("No se pudo cargar la lista de usuarios.");
     }
